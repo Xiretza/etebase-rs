@@ -531,6 +531,7 @@ pub struct CollectionManager {
 }
 
 impl CollectionManager {
+    #[allow(clippy::unnecessary_wraps)]
     fn new(client: Arc<Client>, account_crypto_manager: Arc<AccountCryptoManager>) -> Result<Self> {
         let collection_manager_online = CollectionManagerOnline::new(Arc::clone(&client));
         Ok(Self {
@@ -755,6 +756,7 @@ pub struct ItemManager {
 }
 
 impl ItemManager {
+    #[allow(clippy::unnecessary_wraps)]
     fn new(
         client: Arc<Client>,
         collection_crypto_manager: Arc<CollectionCryptoManager>,
@@ -1064,6 +1066,7 @@ pub struct CollectionInvitationManager {
 }
 
 impl CollectionInvitationManager {
+    #[allow(clippy::unnecessary_wraps)]
     fn new(
         client: Arc<Client>,
         account_crypto_manager: Arc<AccountCryptoManager>,
@@ -1181,6 +1184,7 @@ pub struct CollectionMemberManager {
 }
 
 impl CollectionMemberManager {
+    #[allow(clippy::unnecessary_wraps)]
     fn new(client: Arc<Client>, collection: &Collection) -> Result<Self> {
         let member_manager_online =
             CollectionMemberManagerOnline::new(Arc::clone(&client), &collection.col);
@@ -1242,6 +1246,7 @@ pub struct Collection {
 }
 
 impl Collection {
+    #[allow(clippy::unnecessary_wraps)]
     fn new(
         account_crypto_manager: Arc<AccountCryptoManager>,
         crypto_manager: CollectionCryptoManager,
@@ -1368,6 +1373,7 @@ pub struct Item {
 }
 
 impl Item {
+    #[allow(clippy::unnecessary_wraps)]
     fn new(crypto_manager: ItemCryptoManager, encrypted_item: EncryptedItem) -> Result<Self> {
         Ok(Self {
             item: encrypted_item,

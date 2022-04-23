@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LGPL-2.1-only
 
 #![warn(clippy::all)]
-#![allow(clippy::unnecessary_wraps)]
 
 mod chunker;
 mod crypto;
