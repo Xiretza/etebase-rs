@@ -330,7 +330,7 @@ impl EncryptedCollection {
         let collection_type = parent_crypto_manager.collection_type_to_uid(collection_type)?;
         let collection_key = parent_crypto_manager
             .0
-            .encrypt(&randombytes(SYMMETRIC_KEY_SIZE), Some(&collection_type))?;
+            .encrypt(&randombytes(SYMMETRIC_KEY_SIZE), Some(&collection_type));
         let crypto_manager = Self::crypto_manager_static(
             parent_crypto_manager,
             version,
@@ -504,7 +504,7 @@ impl EncryptedCollection {
         };
         let raw_content = rmp_serde::to_vec_named(&content)?;
         let signed_encryption_key =
-            identity_crypto_manager.encrypt(&buffer_pad_small(&raw_content)?, pubkey)?;
+            identity_crypto_manager.encrypt(&buffer_pad_small(&raw_content)?, pubkey);
         Ok(SignedInvitation {
             uid,
             version: CURRENT_VERSION,
@@ -647,7 +647,7 @@ impl EncryptedRevision {
         let ad_hash = self.calculate_hash(crypto_manager, additional_data)?;
 
         let msg = buffer_pad_small(meta)?;
-        let enc_content = crypto_manager.0.encrypt_detached(&msg, Some(&ad_hash))?;
+        let enc_content = crypto_manager.0.encrypt_detached(&msg, Some(&ad_hash));
 
         self.uid = to_base64(&enc_content.0)?;
         self.meta = enc_content.1;
@@ -749,7 +749,7 @@ impl EncryptedRevision {
             let hash = item.0;
             let buf = item.1;
             let ret = match buf {
-                Some(buf) => Some(crypto_manager.0.encrypt(&buffer_pad(&buf)?, None)?),
+                Some(buf) => Some(crypto_manager.0.encrypt(&buffer_pad(&buf)?, None)),
                 None => None,
             };
 

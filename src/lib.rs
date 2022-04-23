@@ -3,7 +3,6 @@
 
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
-#![allow(clippy::unnecessary_wraps)]
 #![warn(clippy::inconsistent_struct_constructor)]
 #![warn(clippy::must_use_candidate)]
 #![warn(clippy::similar_names)]
@@ -18,6 +17,7 @@
 #![warn(clippy::implicit_clone)]
 #![warn(clippy::single_match_else)]
 #![warn(clippy::trivially_copy_pass_by_ref)]
+#![warn(clippy::unnecessary_wraps)]
 
 mod chunker;
 mod crypto;

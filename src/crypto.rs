@@ -103,13 +103,13 @@ impl CryptoManager {
         })
     }
 
-    pub fn encrypt(&self, msg: &[u8], additional_data: Option<&[u8]>) -> Result<Vec<u8>> {
+    pub fn encrypt(&self, msg: &[u8], additional_data: Option<&[u8]>) -> Vec<u8> {
         let key = aead::Key(self.cipher_key);
         let nonce = aead::gen_nonce();
         let encrypted = aead::seal(msg, additional_data, &nonce, &key);
         let ret = [nonce.as_ref(), &encrypted].concat();
 
-        Ok(ret)
+        ret
     }
 
     pub fn decrypt(&self, cipher: &[u8], additional_data: Option<&[u8]>) -> Result<Vec<u8>> {
@@ -128,14 +128,14 @@ impl CryptoManager {
         &self,
         msg: &[u8],
         additional_data: Option<&[u8]>,
-    ) -> Result<(Vec<u8>, Vec<u8>)> {
+    ) -> (Vec<u8>, Vec<u8>) {
         let key = aead::Key(self.cipher_key);
         let nonce = aead::gen_nonce();
         let mut encrypted = msg.to_owned();
         let tag = aead::seal_detached(&mut encrypted[..], additional_data, &nonce, &key);
         let ret = [nonce.as_ref(), &encrypted].concat();
 
-        Ok((tag[..].to_owned(), ret))
+        (tag[..].to_owned(), ret)
     }
 
     pub fn decrypt_detached(
@@ -243,17 +243,17 @@ pub(crate) struct LoginCryptoManager {
 }
 
 impl LoginCryptoManager {
-    pub fn keygen(seed: &[u8; 32]) -> Result<Self> {
+    pub fn keygen(seed: &[u8; 32]) -> Self {
         let seed = sign::Seed(*seed);
         let (pubkey, privkey) = sign::keypair_from_seed(&seed);
 
-        Ok(Self { pubkey, privkey })
+        Self { pubkey, privkey }
     }
 
-    pub fn sign_detached(&self, msg: &[u8]) -> Result<Vec<u8>> {
+    pub fn sign_detached(&self, msg: &[u8]) -> Vec<u8> {
         let ret = sign::sign_detached(msg, &self.privkey);
 
-        Ok(ret.to_bytes().to_vec())
+        ret.to_bytes().to_vec()
     }
 
     #[must_use]
@@ -268,7 +268,7 @@ pub(crate) struct BoxCryptoManager {
 }
 
 impl BoxCryptoManager {
-    pub fn keygen(seed: Option<&[u8; 32]>) -> Result<Self> {
+    pub fn keygen(seed: Option<&[u8; 32]>) -> Self {
         let (pubkey, privkey) = match seed {
             Some(seed) => {
                 let seed = box_::Seed(*seed);
@@ -277,26 +277,26 @@ impl BoxCryptoManager {
             None => box_::gen_keypair(),
         };
 
-        Ok(Self { pubkey, privkey })
+        Self { pubkey, privkey }
     }
 
-    pub fn from_privkey(privkey: &[u8; box_::SECRETKEYBYTES]) -> Result<BoxCryptoManager> {
+    pub fn from_privkey(privkey: &[u8; box_::SECRETKEYBYTES]) -> BoxCryptoManager {
         let privkey_scalar = scalarmult::Scalar(*privkey);
         let privkey = box_::SecretKey(*privkey);
         let pubkey_scalar = scalarmult::scalarmult_base(&privkey_scalar);
         let pubkey = box_::PublicKey(pubkey_scalar.0);
 
-        Ok(BoxCryptoManager { pubkey, privkey })
+        BoxCryptoManager { pubkey, privkey }
     }
 
-    pub fn encrypt(&self, msg: &[u8], pubkey: &[u8; box_::PUBLICKEYBYTES]) -> Result<Vec<u8>> {
+    pub fn encrypt(&self, msg: &[u8], pubkey: &[u8; box_::PUBLICKEYBYTES]) -> Vec<u8> {
         let pubkey = box_::PublicKey(*pubkey);
         let privkey = box_::SecretKey(self.privkey.0);
         let nonce = box_::gen_nonce();
         let encrypted = box_::seal(msg, &nonce, &pubkey, &privkey);
         let ret = [nonce.as_ref(), &encrypted].concat();
 
-        Ok(ret)
+        ret
     }
 
     pub fn decrypt(&self, cipher: &[u8], pubkey: &[u8; sign::PUBLICKEYBYTES]) -> Result<Vec<u8>> {
@@ -469,12 +469,12 @@ mod tests {
         );
 
         let clear_text = b"This Is Some Test Cleartext.";
-        let cipher = crypto_manager.encrypt(clear_text, None).unwrap();
+        let cipher = crypto_manager.encrypt(clear_text, None);
         let decrypted = crypto_manager.decrypt(&cipher, None).unwrap();
         assert_eq!(clear_text, &decrypted[..]);
 
         let clear_text = b"This Is Some Test Cleartext.";
-        let (tag, cipher) = crypto_manager.encrypt_detached(clear_text, None).unwrap();
+        let (tag, cipher) = crypto_manager.encrypt_detached(clear_text, None);
         let tag: &[u8; 16] = &tag[..].try_into().unwrap();
         let decrypted = crypto_manager.decrypt_detached(&cipher, tag, None).unwrap();
         assert_eq!(clear_text, &decrypted[..]);
@@ -493,10 +493,10 @@ mod tests {
     fn login_crypto_manager() {
         crate::init().unwrap();
 
-        let login_crypto_manager = super::LoginCryptoManager::keygen(&[0; 32]).unwrap();
+        let login_crypto_manager = super::LoginCryptoManager::keygen(&[0; 32]);
 
         let msg = b"This Is Some Test Cleartext.";
-        let signature = login_crypto_manager.sign_detached(msg).unwrap();
+        let signature = login_crypto_manager.sign_detached(msg);
         let pubkey = login_crypto_manager.pubkey();
 
         let signature = sign::Signature::from_bytes(&signature).unwrap();
@@ -508,13 +508,12 @@ mod tests {
     fn box_crypto_manager() {
         crate::init().unwrap();
 
-        let box_crypto_manager = super::BoxCryptoManager::keygen(None).unwrap();
-        let box_crypto_manager2 = super::BoxCryptoManager::keygen(None).unwrap();
+        let box_crypto_manager = super::BoxCryptoManager::keygen(None);
+        let box_crypto_manager2 = super::BoxCryptoManager::keygen(None);
 
         let msg = b"This Is Some Test Cleartext.";
-        let cipher = box_crypto_manager
-            .encrypt(msg, box_crypto_manager2.pubkey().try_into().unwrap())
-            .unwrap();
+        let cipher =
+            box_crypto_manager.encrypt(msg, box_crypto_manager2.pubkey().try_into().unwrap());
         let decrypted = box_crypto_manager2
             .decrypt(&cipher[..], box_crypto_manager.pubkey().try_into().unwrap())
             .unwrap();
