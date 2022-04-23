@@ -12,7 +12,7 @@ pub fn pad(buf: &mut [u8], unpadded_buflen: usize, blocksize: usize) -> Result<u
     unsafe {
         if 0 == ffi::sodium_pad(
             &mut padded_buflen_p,
-            buf.as_mut_ptr() as *mut _,
+            buf.as_mut_ptr().cast(),
             unpadded_buflen,
             blocksize,
             buf.len(),
@@ -31,7 +31,7 @@ pub fn unpad(buf: &[u8], padded_buflen: usize, blocksize: usize) -> Result<usize
     unsafe {
         if 0 == ffi::sodium_unpad(
             &mut unpadded_buflen_p,
-            buf.as_ptr() as *const _,
+            buf.as_ptr().cast(),
             padded_buflen,
             blocksize,
         ) {
