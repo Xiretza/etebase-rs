@@ -25,8 +25,8 @@ use super::{
         LoginChallange, LoginResponseUser, User, UserProfile,
     },
     utils::{
-        buffer_unpad, from_base64, randombytes, randombytes_array, to_base64, MsgPackSerilization,
-        StrBase64, SYMMETRIC_KEY_SIZE,
+        buffer_unpad, from_base64, randombytes_array, to_base64, MsgPackSerilization, StrBase64,
+        SYMMETRIC_KEY_SIZE,
     },
 };
 
@@ -124,9 +124,7 @@ impl Account {
             .try_into()
             .map_err(|_| Error::ProgrammingError("Key should be exactly 32 bytes long."))?;
 
-        let salt = randombytes(32);
-
-        Self::signup_common(client, user, main_key, &salt)
+        Self::signup_common(client, user, main_key, &[])
     }
 
     fn signup_common(
