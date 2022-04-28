@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
-use std::convert::TryInto;
+use std::fmt::Write;
+use std::{convert::TryInto, iter::once};
 
 use sodiumoxide::crypto::{
     aead::xchacha20poly1305_ietf as aead, box_, generichash, kdf, pwhash::argon2id13, scalarmult,
@@ -382,13 +383,6 @@ impl CryptoMac {
     }
 }
 
-fn get_encoded_chunk(content: &[u8], suffix: &str) -> String {
-    let num =
-        ((u32::from(content[0]) << 16) + (u32::from(content[1]) << 8) + u32::from(content[2]))
-            % 100_000;
-    return format!("{:0>5}{}", num, suffix);
-}
-
 /// Return a pretty formatted fingerprint of the content
 ///
 /// For example:
@@ -400,31 +394,49 @@ fn get_encoded_chunk(content: &[u8], suffix: &str) -> String {
 ///
 /// # Arguments:
 /// * `content` - the content to create a fingerprint for
+#[allow(clippy::missing_panics_doc)]
 #[must_use]
 pub fn pretty_fingerprint(content: &[u8]) -> String {
-    let delimiter = "   ";
-    let fingerprint = generichash_quick(content, None).unwrap();
-
     /* We use 3 bytes each time to generate a 5 digit number - this means 10 pairs for bytes 0-29
-     * We then use bytes 29-31 for another number, and then the 3 most significant bits of each first byte for the last.
+     * We then use bytes 29-31 for another number (reusing byte 29), and then the 3 most significant
+     * bits of the first 10 bytes for the last.
      */
-    let mut last_num: u32 = 0;
-    let parts = (0..10).into_iter().map(|i| {
-        let suffix = if i % 4 == 3 { "\n" } else { delimiter };
 
-        last_num = (last_num << 3) | (u32::from(fingerprint[i]) & 0xE0) >> 5;
-        get_encoded_chunk(&fingerprint[i * 3..], suffix)
-    });
+    let mut fingerprint = generichash_quick(content, None).unwrap().to_vec();
+    assert_eq!(fingerprint.len(), 32);
 
-    let last_num = (0..10).into_iter().fold(0, |accum, i| {
-        (accum << 3) | (u32::from(fingerprint[i]) & 0xE0) >> 5
-    }) % 100_000;
-    let last_num = format!("{:0>5}", last_num);
-    let parts = parts
-        .chain(std::iter::once(get_encoded_chunk(
-            &fingerprint[29..],
-            delimiter,
-        )))
-        .chain(std::iter::once(last_num));
-    parts.collect::<String>()
+    let last_num = fingerprint[..10]
+        .iter()
+        .fold(0, |accum, &i| (accum << 3) | (u32::from(i) >> 5));
+
+    // duplicate byte 29 so it becomes both the last byte of the 10th number and the first byte of
+    // the 11th number
+    fingerprint.insert(29, fingerprint[29]);
+
+    let numbers = fingerprint
+        .chunks(3)
+        .map(|bytes| u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
+        .chain(once(last_num));
+
+    let mut result = String::with_capacity(89);
+    for (i, number) in numbers.enumerate() {
+        write!(result, "{:0>5}", number % 100_000).unwrap();
+
+        let end_of_line = (i % 4) == 3;
+        let last_line = i / 4 == 2;
+
+        let suffix = if end_of_line {
+            if last_line {
+                ""
+            } else {
+                "\n"
+            }
+        } else {
+            "   "
+        };
+
+        result.push_str(suffix);
+    }
+
+    result
 }
