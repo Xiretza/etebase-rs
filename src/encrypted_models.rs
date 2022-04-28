@@ -357,24 +357,26 @@ impl EncryptedCollection {
         }
 
         // FIXME: remove this whole part once "collection-type-migration" is done
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct EncryptedCollectionLegacy {
-            item: EncryptedItem,
-            access_level: CollectionAccessLevel,
-            #[serde(with = "serde_bytes")]
-            collection_key: Vec<u8>,
-            stoken: Option<String>,
-        }
+        Ok({
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct EncryptedCollectionLegacy {
+                item: EncryptedItem,
+                access_level: CollectionAccessLevel,
+                #[serde(with = "serde_bytes")]
+                collection_key: Vec<u8>,
+                stoken: Option<String>,
+            }
 
-        let ret: EncryptedCollectionLegacy = rmp_serde::from_read_ref(&cached.data)?;
+            let ret: EncryptedCollectionLegacy = rmp_serde::from_read_ref(&cached.data)?;
 
-        Ok(Self {
-            item: ret.item,
-            access_level: ret.access_level,
-            collection_key: ret.collection_key,
-            stoken: ret.stoken,
-            collection_type: None,
+            Self {
+                item: ret.item,
+                access_level: ret.access_level,
+                collection_key: ret.collection_key,
+                stoken: ret.stoken,
+                collection_type: None,
+            }
         })
     }
 
