@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use sodiumoxide::{
     base64,
@@ -186,10 +186,19 @@ pub fn to_base64(bytes: &[u8]) -> Result<StringBase64> {
 /// ```
 pub(crate) fn shuffle<T>(a: &mut [T]) -> Vec<usize> {
     let len = a.len();
+    let len_u32: u32 = len
+        .try_into()
+        .expect("can't shuffle buffer with length >= 2^32");
     let mut shuffled_indices: Vec<usize> = (0..len).collect();
 
-    for i in 0..len {
-        let j = i + sodiumoxide::randombytes::randombytes_uniform((len - i) as u32) as usize;
+    for i in 0..len_u32 {
+        let j = i + sodiumoxide::randombytes::randombytes_uniform(len_u32 - i);
+
+        // i and j are both less than a.len(), which is a usize, so they must be valid usize as
+        // well
+        let i = usize::try_from(i).unwrap();
+        let j = usize::try_from(j).unwrap();
+
         a.swap(i, j);
         shuffled_indices.swap(i, j);
     }
@@ -238,8 +247,11 @@ pub(crate) fn buffer_pad_small(buf: &[u8]) -> Result<Vec<u8>> {
 }
 
 pub(crate) fn buffer_pad(buf: &[u8]) -> Result<Vec<u8>> {
-    let len = buf.len();
-    let padding = get_padding(len as u32) as usize;
+    let len = buf
+        .len()
+        .try_into()
+        .expect("can't pad buffer with length >= 2^32");
+    let padding = usize::try_from(get_padding(len)).unwrap();
 
     buffer_pad_fixed(buf, padding)
 }
