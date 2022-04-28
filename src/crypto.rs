@@ -362,7 +362,10 @@ impl CryptoMac {
     }
 
     pub fn update_with_len_prefix(&mut self, msg: &[u8]) -> Result<()> {
-        let len = msg.len() as u32;
+        let len: u32 = msg
+            .len()
+            .try_into()
+            .map_err(|_| Error::ProgrammingError("Message too long"))?;
         to_enc_error!(
             self.state.update(&len.to_le_bytes()),
             "Failed to update hash"

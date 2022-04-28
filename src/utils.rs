@@ -3,6 +3,8 @@
 
 mod sodium_padding;
 
+use std::convert::{TryFrom, TryInto};
+
 use sodiumoxide::base64;
 
 use super::error::{Error, Result};
@@ -89,10 +91,19 @@ pub fn to_base64(bytes: &[u8]) -> Result<StringBase64> {
 // So if the first item moved to position 3: ret[0] = 3
 pub(crate) fn shuffle<T>(a: &mut [T]) -> Vec<usize> {
     let len = a.len();
+    let len_u32: u32 = len
+        .try_into()
+        .expect("can't shuffle buffer with length >= 2^32");
     let mut shuffled_indices: Vec<usize> = (0..len).collect();
 
-    for i in 0..len {
-        let j = i + sodiumoxide::randombytes::randombytes_uniform((len - i) as u32) as usize;
+    for i in 0..len_u32 {
+        let j = i + sodiumoxide::randombytes::randombytes_uniform(len_u32 - i);
+
+        // i and j are both less than a.len(), which is a usize, so they must be valid usize as
+        // well
+        let i = usize::try_from(i).unwrap();
+        let j = usize::try_from(j).unwrap();
+
         a.swap(i, j);
         shuffled_indices.swap(i, j);
     }
@@ -125,7 +136,9 @@ pub fn get_padding(length: u32) -> u32 {
     }
 
     let e = f64::from(length).log2().floor();
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let s = (e.log2().floor() as u32) + 1;
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let last_bits = (e as u32) - s;
     let bit_mask = (1 << last_bits) - 1;
 
@@ -141,8 +154,11 @@ pub(crate) fn buffer_pad_small(buf: &[u8]) -> Result<Vec<u8>> {
 }
 
 pub(crate) fn buffer_pad(buf: &[u8]) -> Result<Vec<u8>> {
-    let len = buf.len();
-    let padding = get_padding(len as u32) as usize;
+    let len = buf
+        .len()
+        .try_into()
+        .expect("can't pad buffer with length >= 2^32");
+    let padding = usize::try_from(get_padding(len)).unwrap();
 
     buffer_pad_fixed(buf, padding)
 }
