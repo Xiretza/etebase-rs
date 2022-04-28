@@ -516,15 +516,17 @@ impl CollectionManagerOnline {
     {
         let url = apply_fetch_options(self.api_base.join("list_multi/")?, options);
 
-        #[derive(Serialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Body {
-            collection_types: Vec<ByteBuf>,
-        }
-
         let collection_types = collection_types.into_iter().map(ByteBuf::from).collect();
 
-        let body_struct = Body { collection_types };
+        let body_struct = {
+            #[derive(Serialize)]
+            #[serde(rename_all = "camelCase")]
+            struct Body {
+                collection_types: Vec<ByteBuf>,
+            }
+
+            Body { collection_types }
+        };
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
         let res = self.client.post(url.as_str(), body)?;
@@ -875,18 +877,20 @@ impl CollectionInvitationManagerOnline {
             .api_base
             .join(&format!("incoming/{}/accept/", invitation.uid()))?;
 
-        #[derive(Serialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Body<'a> {
-            #[serde(with = "serde_bytes")]
-            encryption_key: &'a [u8],
-            #[serde(with = "serde_bytes")]
-            collection_type: &'a [u8],
-        }
+        let body_struct = {
+            #[derive(Serialize)]
+            #[serde(rename_all = "camelCase")]
+            struct Body<'a> {
+                #[serde(with = "serde_bytes")]
+                encryption_key: &'a [u8],
+                #[serde(with = "serde_bytes")]
+                collection_type: &'a [u8],
+            }
 
-        let body_struct = Body {
-            encryption_key,
-            collection_type,
+            Body {
+                encryption_key,
+                collection_type,
+            }
         };
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
@@ -1001,13 +1005,15 @@ impl CollectionMemberManagerOnline {
     ) -> Result<()> {
         let url = self.api_base.join(&format!("{}/", username))?;
 
-        #[derive(Serialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Body {
-            access_level: CollectionAccessLevel,
-        }
+        let body_struct = {
+            #[derive(Serialize)]
+            #[serde(rename_all = "camelCase")]
+            struct Body {
+                access_level: CollectionAccessLevel,
+            }
 
-        let body_struct = Body { access_level };
+            Body { access_level }
+        };
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
         let res = self.client.patch(url.as_str(), body)?;
