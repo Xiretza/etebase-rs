@@ -732,6 +732,7 @@ impl CollectionManager {
     ///
     /// # Arguments:
     /// * `collection` - the collection object to be cached
+    #[allow(clippy::unused_self)] // existing public interface
     pub fn cache_save(&self, collection: &Collection) -> Result<Vec<u8>> {
         collection.col.cache_save()
     }
@@ -742,6 +743,7 @@ impl CollectionManager {
     ///
     /// # Arguments:
     /// * `collection` - the collection object to be cached
+    #[allow(clippy::unused_self)] // existing public interface
     pub fn cache_save_with_content(&self, collection: &Collection) -> Result<Vec<u8>> {
         collection.col.cache_save_with_content()
     }
@@ -1063,6 +1065,7 @@ impl ItemManager {
     ///
     /// # Arguments:
     /// * `item` - the item object to be cached
+    #[allow(clippy::unused_self)] // existing public interface
     pub fn cache_save(&self, item: &Item) -> Result<Vec<u8>> {
         item.item.cache_save()
     }
@@ -1073,6 +1076,7 @@ impl ItemManager {
     ///
     /// # Arguments:
     /// * `item` - the item object to be cached
+    #[allow(clippy::unused_self)] // existing public interface
     pub fn cache_save_with_content(&self, item: &Item) -> Result<Vec<u8>> {
         item.item.cache_save_with_content()
     }
