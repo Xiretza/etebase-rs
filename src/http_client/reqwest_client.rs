@@ -34,11 +34,7 @@ impl Client {
         Ok(Self { req_client })
     }
 
-    fn with_auth_header(
-        &self,
-        builder: RequestBuilder,
-        auth_token: Option<&str>,
-    ) -> RequestBuilder {
+    fn with_auth_header(builder: RequestBuilder, auth_token: Option<&str>) -> RequestBuilder {
         match auth_token {
             Some(auth_token) => {
                 builder.header(header::AUTHORIZATION, format!("Token {}", auth_token))
@@ -47,52 +43,46 @@ impl Client {
         }
     }
 
-    fn with_base_headers(&self, builder: RequestBuilder) -> RequestBuilder {
+    fn with_base_headers(builder: RequestBuilder) -> RequestBuilder {
         builder
             .header(header::CONTENT_TYPE, "application/msgpack")
             .header(header::ACCEPT, "application/msgpack")
     }
 
-    fn prep_client(&self, builder: RequestBuilder, auth_token: Option<&str>) -> RequestBuilder {
-        self.with_base_headers(self.with_auth_header(builder, auth_token))
+    fn prep_client(builder: RequestBuilder, auth_token: Option<&str>) -> RequestBuilder {
+        Self::with_base_headers(Self::with_auth_header(builder, auth_token))
     }
 
     fn get_inner(&self, url: &str, auth_token: Option<&str>) -> Result<Response> {
-        let req = self.prep_client(self.req_client.get(url), auth_token);
+        let req = Self::prep_client(self.req_client.get(url), auth_token);
         let resp = req.send()?;
         let status = resp.status().as_u16();
         Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn post_inner(&self, url: &str, auth_token: Option<&str>, body: Vec<u8>) -> Result<Response> {
-        let req = self
-            .prep_client(self.req_client.post(url), auth_token)
-            .body(body);
+        let req = Self::prep_client(self.req_client.post(url), auth_token).body(body);
         let resp = req.send()?;
         let status = resp.status().as_u16();
         Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn put_inner(&self, url: &str, auth_token: Option<&str>, body: Vec<u8>) -> Result<Response> {
-        let req = self
-            .prep_client(self.req_client.put(url), auth_token)
-            .body(body);
+        let req = Self::prep_client(self.req_client.put(url), auth_token).body(body);
         let resp = req.send()?;
         let status = resp.status().as_u16();
         Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn patch_inner(&self, url: &str, auth_token: Option<&str>, body: Vec<u8>) -> Result<Response> {
-        let req = self
-            .prep_client(self.req_client.patch(url), auth_token)
-            .body(body);
+        let req = Self::prep_client(self.req_client.patch(url), auth_token).body(body);
         let resp = req.send()?;
         let status = resp.status().as_u16();
         Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn delete_inner(&self, url: &str, auth_token: Option<&str>) -> Result<Response> {
-        let req = self.prep_client(self.req_client.delete(url), auth_token);
+        let req = Self::prep_client(self.req_client.delete(url), auth_token);
         let resp = req.send()?;
         let status = resp.status().as_u16();
         Ok(Response::new(resp.bytes()?.to_vec(), status))
