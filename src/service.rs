@@ -49,6 +49,7 @@ impl MainCryptoManager {
         AccountCryptoManager::new(key, self.0.version)
     }
 
+    #[allow(clippy::unused_self)] // for consistency with other methods
     pub fn identity_crypto_manager(&self, privkey: &[u8; 32]) -> Result<BoxCryptoManager> {
         BoxCryptoManager::from_privkey(privkey)
     }
