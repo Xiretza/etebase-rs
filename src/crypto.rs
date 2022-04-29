@@ -257,20 +257,14 @@ impl LoginCryptoManager {
         Ok(ret.to_bytes().to_vec())
     }
 
-    pub fn verify_detached(
-        &self,
-        msg: &[u8],
-        signature: &[u8],
-        pubkey: &[u8; sign::PUBLICKEYBYTES],
-    ) -> Result<bool> {
+    pub fn verify_detached(&self, msg: &[u8], signature: &[u8]) -> Result<bool> {
         let mut signature_copy = [0; 64];
         signature_copy[..].copy_from_slice(signature);
         let signature = to_enc_error!(
             sign::Signature::from_bytes(&signature_copy),
             "siganture copy failed"
         )?;
-        let pubkey = sign::PublicKey(*pubkey);
-        let ret = sign::verify_detached(&signature, msg, &pubkey);
+        let ret = sign::verify_detached(&signature, msg, &self.pubkey);
 
         Ok(ret)
     }

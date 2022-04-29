@@ -82,9 +82,8 @@ fn login_crypto_manager() {
 
     let msg = b"This Is Some Test Cleartext.";
     let signature = login_crypto_manager.sign_detached(msg).unwrap();
-    let pubkey = login_crypto_manager.pubkey();
     assert!(login_crypto_manager
-        .verify_detached(msg, &signature, pubkey.try_into().unwrap())
+        .verify_detached(msg, &signature)
         .unwrap());
 }
 
