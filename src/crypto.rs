@@ -233,6 +233,7 @@ impl CryptoManager {
         generichash_quick(msg, Some(&self.mac_key))
     }
 
+    #[allow(clippy::unused_self)] // for consistency with other methods
     pub fn calculate_hash(&self, msg: &[u8]) -> Result<[u8; 32]> {
         generichash_quick(msg, None)
     }
