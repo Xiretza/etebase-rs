@@ -650,11 +650,13 @@ impl CollectionManager {
         I: IntoIterator,
         I::Item: AsRef<str>,
     {
-        let collection_type_uids = collection_types.into_iter().map(|x| {
-            self.account_crypto_manager
-                .collection_type_to_uid(x.as_ref())
-                .unwrap()
-        });
+        let collection_type_uids = collection_types
+            .into_iter()
+            .map(|x| {
+                self.account_crypto_manager
+                    .collection_type_to_uid(x.as_ref())
+            })
+            .collect::<Result<Vec<_>>>()?;
         let response = self
             .collection_manager_online
             .list_multi(collection_type_uids, options)?;
