@@ -120,7 +120,7 @@ pub fn get_padding(length: u32) -> u32 {
         return (length | size) + 1;
     }
 
-    let e = (length as f64).log2().floor();
+    let e = f64::from(length).log2().floor();
     let s = (e.log2().floor() as u32) + 1;
     let last_bits = (e as u32) - s;
     let bit_mask = (1 << last_bits) - 1;
