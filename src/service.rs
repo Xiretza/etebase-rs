@@ -1024,6 +1024,7 @@ impl ItemManager {
     pub fn upload_content(&self, item: &Item) -> Result<()> {
         let item = &item.item;
         for chunk in item.pending_chunks() {
+            #[allow(clippy::match_same_arms)] // false positive, order is significant
             match self.item_manager_online.chunk_upload(item, chunk, None) {
                 Err(Error::Conflict(_)) => (),
                 Err(err) => return Err(err),
