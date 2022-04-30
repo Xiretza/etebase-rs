@@ -37,6 +37,7 @@ pub const SYMMETRIC_NONCE_SIZE: usize = 24; // sodium.crypto_aead_xchacha20poly1
 /// let b = randombytes(0);
 /// assert!(b.is_empty());
 /// ```
+#[must_use]
 pub fn randombytes(size: usize) -> Vec<u8> {
     sodiumoxide::randombytes::randombytes(size)
 }
@@ -54,6 +55,7 @@ pub fn randombytes(size: usize) -> Vec<u8> {
 /// // Letting the length be inferred from the result type
 /// let b: [u8; 10] = randombytes_array();
 /// ```
+#[must_use]
 pub fn randombytes_array<const N: usize>() -> [u8; N] {
     sodiumoxide::randombytes::randombytes(N)
         .try_into()
@@ -88,6 +90,7 @@ pub fn randombytes_array<const N: usize>() -> [u8; N] {
 /// assert_ne!(a, c);
 /// assert_eq!(c, &[5, 67, 208, 128, 105, 110, 24, 70, 104, 100]);
 /// ```
+#[must_use]
 pub fn randombytes_deterministic(size: usize, seed: &[u8; 32]) -> Vec<u8> {
     // Not exactly like the sodium randombytes_deterministic but close enough
     let nonce =
@@ -120,6 +123,7 @@ pub fn randombytes_deterministic(size: usize, seed: &[u8; 32]) -> Vec<u8> {
 /// assert_eq!(Err(()), validate_password(b""));
 /// assert_eq!(Ok(()), validate_password(b"hunter2"));
 /// ```
+#[must_use]
 pub fn memcmp(x: &[u8], y: &[u8]) -> bool {
     sodiumoxide::utils::memcmp(x, y)
 }
@@ -205,6 +209,7 @@ pub(crate) fn shuffle<T>(a: &mut [T]) -> Vec<usize> {
 ///
 /// # Arguments:
 /// * `length` - the length of the buffer to pad
+#[must_use]
 pub fn get_padding(length: u32) -> u32 {
     // Use the padme padding scheme for efficiently
     // https://www.petsymposium.org/2019/files/papers/issue4/popets-2019-0056.pdf

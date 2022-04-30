@@ -40,6 +40,7 @@ pub struct RemovedCollection {
 
 impl RemovedCollection {
     /// The uid of the removed collection
+    #[must_use]
     pub fn uid(&self) -> &StrBase64 {
         &self.uid
     }
@@ -57,21 +58,25 @@ pub struct CollectionListResponse<T> {
 
 impl<T> CollectionListResponse<T> {
     /// Sync token for the list response
+    #[must_use]
     pub fn stoken(&self) -> Option<&str> {
         self.stoken.as_deref()
     }
 
     /// List of collections included in the response
+    #[must_use]
     pub fn data(&self) -> &Vec<T> {
         &self.data
     }
 
     /// Indicates whether there are no more collections to fetch
+    #[must_use]
     pub fn done(&self) -> bool {
         self.done
     }
 
     /// The list of collections to which the user lost access
+    #[must_use]
     pub fn removed_memberships(&self) -> Option<&Vec<RemovedCollection>> {
         self.removed_memberships.as_ref()
     }
@@ -87,16 +92,19 @@ pub struct ItemListResponse<T> {
 
 impl<T> ItemListResponse<T> {
     /// Sync token for the list response
+    #[must_use]
     pub fn stoken(&self) -> Option<&str> {
         self.stoken.as_deref()
     }
 
     /// List of items included in the response
+    #[must_use]
     pub fn data(&self) -> &Vec<T> {
         &self.data
     }
 
     /// Indicates whether there are no more items to fetch
+    #[must_use]
     pub fn done(&self) -> bool {
         self.done
     }
@@ -112,16 +120,19 @@ pub struct IteratorListResponse<T> {
 
 impl<T> IteratorListResponse<T> {
     /// Iterator for the list response
+    #[must_use]
     pub fn iterator(&self) -> Option<&str> {
         self.iterator.as_deref()
     }
 
     /// List of data items included in the response
+    #[must_use]
     pub fn data(&self) -> &Vec<T> {
         &self.data
     }
 
     /// Indicates whether there is no more data to fetch
+    #[must_use]
     pub fn done(&self) -> bool {
         self.done
     }
@@ -197,6 +208,7 @@ impl User {
     /// # Arguments:
     /// * `username` - the user's username
     /// * `email` - the user's email
+    #[must_use]
     pub fn new(username: &str, email: &str) -> Self {
         Self {
             username: username.to_owned(),
@@ -214,6 +226,7 @@ impl User {
     }
 
     /// Get the username
+    #[must_use]
     pub fn username(&self) -> &str {
         &self.username
     }
@@ -228,6 +241,7 @@ impl User {
     }
 
     /// Get the email address
+    #[must_use]
     pub fn email(&self) -> &str {
         &self.email
     }
@@ -245,6 +259,7 @@ impl UserProfile {
     ///
     /// This is used for identifying the user and safely sending them data (such as
     /// [invitations](SignedInvitation)).
+    #[must_use]
     pub fn pubkey(&self) -> &[u8] {
         &self.pubkey
     }
@@ -397,35 +412,41 @@ pub struct FetchOptions<'a> {
 
 impl<'a> FetchOptions<'a> {
     /// Return a new fetch options object
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Limit the amount of items returned
+    #[must_use = "Builder methods consume the object and produce a new one with modified settings"]
     pub fn limit(mut self, limit: usize) -> Self {
         self.limit = Some(limit);
         self
     }
 
     /// How much data to prefetech
+    #[must_use = "Builder methods consume the object and produce a new one with modified settings"]
     pub fn prefetch(mut self, prefetch: &'a PrefetchOption) -> Self {
         self.prefetch = Some(prefetch);
         self
     }
 
     /// Used by [`ItemManager`](crate::managers::ItemManager) functions to toggle fetching the collection's item
+    #[must_use = "Builder methods consume the object and produce a new one with modified settings"]
     pub fn with_collection(mut self, with_collection: bool) -> Self {
         self.with_collection = Some(with_collection);
         self
     }
 
     /// The current iterator to start from (when iterating lists)
+    #[must_use = "Builder methods consume the object and produce a new one with modified settings"]
     pub fn iterator(mut self, iterator: Option<&'a str>) -> Self {
         self.iterator = iterator;
         self
     }
 
     /// The sync token to fetch with
+    #[must_use = "Builder methods consume the object and produce a new one with modified settings"]
     pub fn stoken(mut self, stoken: Option<&'a str>) -> Self {
         self.stoken = stoken;
         self
@@ -800,11 +821,13 @@ pub struct CollectionMember {
 
 impl CollectionMember {
     /// The username of a member
+    #[must_use]
     pub fn username(&self) -> &str {
         &self.username
     }
 
     /// The access level of the member
+    #[must_use]
     pub fn access_level(&self) -> CollectionAccessLevel {
         self.access_level
     }

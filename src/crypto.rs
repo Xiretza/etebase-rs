@@ -274,6 +274,7 @@ impl LoginCryptoManager {
         Ok(ret)
     }
 
+    #[must_use]
     pub fn pubkey(&self) -> &[u8] {
         &self.pubkey[..]
     }
@@ -329,10 +330,12 @@ impl BoxCryptoManager {
         )?)
     }
 
+    #[must_use]
     pub fn pubkey(&self) -> &[u8] {
         &self.pubkey[..]
     }
 
+    #[must_use]
     pub fn privkey(&self) -> &[u8] {
         &self.privkey[..]
     }
@@ -397,6 +400,7 @@ fn get_encoded_chunk(content: &[u8], suffix: &str) -> String {
 ///
 /// # Arguments:
 /// * `content` - the content to create a fingerprint for
+#[must_use]
 pub fn pretty_fingerprint(content: &[u8]) -> String {
     let delimiter = "   ";
     let fingerprint = generichash_quick(content, None).unwrap();

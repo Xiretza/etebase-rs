@@ -30,6 +30,7 @@ impl Response {
     /// # Arguments:
     /// * `bytes` - the raw resposne body
     /// * `status` - the response status code
+    #[must_use]
     pub fn new(bytes: Vec<u8>, status: u16) -> Self {
         Self {
             bytes,
@@ -42,6 +43,7 @@ impl Response {
     ///
     /// # Arguments:
     /// * `err` - the associated [`Error`]
+    #[must_use]
     pub fn new_err(err: Error) -> Self {
         Self {
             bytes: vec![],
@@ -70,11 +72,13 @@ impl Response {
     }
 
     /// Get the response body as bytes
+    #[must_use]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
     /// Get the response status code
+    #[must_use]
     pub fn status(&self) -> u16 {
         self.status
     }
