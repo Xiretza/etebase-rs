@@ -4,6 +4,7 @@
 #![warn(clippy::all)]
 #![allow(clippy::unnecessary_wraps)]
 #![warn(clippy::inconsistent_struct_constructor)]
+#![warn(clippy::must_use_candidate)]
 
 mod chunker;
 mod crypto;

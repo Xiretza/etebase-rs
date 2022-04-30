@@ -100,6 +100,7 @@ pub struct ItemMetadata {
 
 impl ItemMetadata {
     /// Create a new metadata object
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -114,6 +115,7 @@ impl ItemMetadata {
     }
 
     /// The item type
+    #[must_use]
     pub fn item_type(&self) -> Option<&str> {
         self.type_.as_deref()
     }
@@ -130,6 +132,7 @@ impl ItemMetadata {
     }
 
     /// The item name
+    #[must_use]
     pub fn name(&self) -> Option<&str> {
         self.name.as_deref()
     }
@@ -144,6 +147,7 @@ impl ItemMetadata {
     }
 
     /// Modification time of the item
+    #[must_use]
     pub fn mtime(&self) -> Option<i64> {
         self.mtime
     }
@@ -158,6 +162,7 @@ impl ItemMetadata {
     }
 
     /// The item description
+    #[must_use]
     pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
@@ -172,6 +177,7 @@ impl ItemMetadata {
     }
 
     /// The item color in `#RRGGBB` or `#RRGGBBAA` format
+    #[must_use]
     pub fn color(&self) -> Option<&str> {
         self.color.as_deref()
     }
@@ -219,31 +225,37 @@ pub struct SignedInvitation {
 
 impl SignedInvitation {
     /// The uid of the invitation
+    #[must_use]
     pub fn uid(&self) -> &str {
         &self.uid
     }
 
     /// The username this invitation is for
+    #[must_use]
     pub fn username(&self) -> &str {
         &self.username
     }
 
     /// The collection uid of the [`Collection`](crate::Collection) this invitation is for
+    #[must_use]
     pub fn collection(&self) -> &str {
         &self.collection
     }
 
     /// The access level offered in this invitation
+    #[must_use]
     pub fn access_level(&self) -> CollectionAccessLevel {
         self.access_level
     }
 
     /// The username of the inviting user
+    #[must_use]
     pub fn sender_username(&self) -> Option<&str> {
         self.from_username.as_deref()
     }
 
     /// The public key of the inviting user
+    #[must_use]
     pub fn sender_pubkey(&self) -> &[u8] {
         match self.from_pubkey.as_deref() {
             Some(from_pubkey) => from_pubkey,
@@ -252,11 +264,13 @@ impl SignedInvitation {
     }
 
     #[deprecated = "This method has been renamed to sender_username() to avoid potential confusion regarding its name"]
+    #[must_use]
     pub fn from_username(&self) -> Option<&str> {
         self.sender_username()
     }
 
     #[deprecated = "This method has been renamed to sender_pubkey() to avoid potential confusion regarding its name"]
+    #[must_use]
     pub fn from_pubkey(&self) -> &[u8] {
         self.sender_pubkey()
     }
