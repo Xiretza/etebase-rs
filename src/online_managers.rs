@@ -17,7 +17,7 @@ use super::error::{Error, Result};
 use super::http_client::Client;
 use crate::utils::{StrBase64, StringBase64};
 
-pub fn test_reset(client: &Client, body_struct: SignupBody) -> Result<()> {
+pub fn test_reset(client: &Client, body_struct: &SignupBody) -> Result<()> {
     let body = rmp_serde::to_vec_named(&body_struct)?;
     let url = client.api_base.join("api/v1/test/authentication/reset/")?;
 

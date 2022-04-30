@@ -44,7 +44,7 @@ fn user_reset(user: &TestUser) -> Result<()> {
         login_pubkey: &from_base64(user.loginPubkey)?,
         encrypted_content: &from_base64(user.encryptedContent)?,
     };
-    test_reset(&client, body_struct)?;
+    test_reset(&client, &body_struct)?;
 
     Ok(())
 }
