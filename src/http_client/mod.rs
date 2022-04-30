@@ -157,6 +157,7 @@ impl Client {
     ///
     /// assert_eq!(client.server_url().to_string(), "https://invalid.example/");
     /// ```
+    #[must_use]
     pub fn server_url(&self) -> &Url {
         &self.api_base
     }
