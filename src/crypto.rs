@@ -53,6 +53,7 @@ pub(crate) fn derive_key(
     Ok(key)
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub(crate) struct CryptoManager {
     pub version: u8,
     cipher_key: [u8; 32],
@@ -322,6 +323,7 @@ impl BoxCryptoManager {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub(crate) struct CryptoMac {
     state: generichash::State,
 }

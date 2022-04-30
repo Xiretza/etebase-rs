@@ -7,6 +7,7 @@
 #![warn(clippy::must_use_candidate)]
 #![warn(clippy::similar_names)]
 #![warn(clippy::unused_self)]
+#![warn(clippy::module_name_repetitions)]
 
 mod chunker;
 mod crypto;
