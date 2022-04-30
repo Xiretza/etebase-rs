@@ -51,6 +51,7 @@ pub fn derive_key(salt: &[u8; SALT_LENGTH], password: &str) -> Result<[u8; SYMME
     Ok(key)
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct CryptoManager {
     pub version: u8,
     cipher_key: [u8; 32],
@@ -337,6 +338,7 @@ impl BoxCryptoManager {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct CryptoMac {
     state: generichash::State,
 }
