@@ -594,7 +594,7 @@ impl EncryptedRevision {
         additional_data: &[u8],
     ) -> Result<Vec<u8>> {
         let mut crypto_mac = crypto_manager.0.crypto_mac()?;
-        crypto_mac.update(&[self.deleted as u8])?;
+        crypto_mac.update(&[u8::from(self.deleted)])?;
         crypto_mac.update_with_len_prefix(additional_data)?;
 
         // We hash the chunks separately so that the server can (in the future) return just the hash instead of the full

@@ -40,8 +40,8 @@ impl Rollsum {
     }
 
     fn rollsum_add(&mut self, drop: u8, add: u8) {
-        let add = add as u32;
-        let drop = drop as u32;
+        let add = u32::from(add);
+        let drop = u32::from(drop);
         self.s1 = self.s1.wrapping_add(add.wrapping_sub(drop));
         self.s2 = self
             .s2
