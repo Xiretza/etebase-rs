@@ -194,7 +194,7 @@ impl Account {
             .unwrap();
         let main_key = derive_key(&salt, password)?;
 
-        Self::login_common(client, username, main_key, login_challenge)
+        Self::login_common(client, username, main_key, &login_challenge)
     }
 
     /// Authenticates a user using the same `main_key` as was provided to
@@ -217,14 +217,14 @@ impl Account {
             rest => rest?,
         };
 
-        Self::login_common(client, username, main_key, login_challenge)
+        Self::login_common(client, username, main_key, &login_challenge)
     }
 
     fn login_common(
         mut client: Client,
         username: &str,
         main_key: [u8; SYMMETRIC_KEY_SIZE],
-        login_challenge: LoginChallange,
+        login_challenge: &LoginChallange,
     ) -> Result<Self> {
         let authenticator = Authenticator::new(&client);
 
