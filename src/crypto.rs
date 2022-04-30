@@ -245,7 +245,7 @@ impl LoginCryptoManager {
         let seed = sign::Seed(*seed);
         let (pubkey, privkey) = sign::keypair_from_seed(&seed);
 
-        Ok(Self { privkey, pubkey })
+        Ok(Self { pubkey, privkey })
     }
 
     pub fn sign_detached(&self, msg: &[u8]) -> Result<Vec<u8>> {
@@ -292,7 +292,7 @@ impl BoxCryptoManager {
             None => box_::gen_keypair(),
         };
 
-        Ok(Self { privkey, pubkey })
+        Ok(Self { pubkey, privkey })
     }
 
     pub fn from_privkey(privkey: &[u8; box_::SECRETKEYBYTES]) -> Result<BoxCryptoManager> {
@@ -301,7 +301,7 @@ impl BoxCryptoManager {
         let pubkey_scalar = scalarmult::scalarmult_base(&privkey_scalar);
         let pubkey = box_::PublicKey(pubkey_scalar[..].try_into().unwrap());
 
-        Ok(BoxCryptoManager { privkey, pubkey })
+        Ok(BoxCryptoManager { pubkey, privkey })
     }
 
     pub fn encrypt(&self, msg: &[u8], pubkey: &[u8; box_::PUBLICKEYBYTES]) -> Result<Vec<u8>> {
