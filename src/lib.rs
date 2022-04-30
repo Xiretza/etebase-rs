@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
-#![warn(clippy::all)]
-#![deny(clippy::must_use_candidate)]
+#![warn(clippy::pedantic)]
+// Pretty much all functions return a Result, doesn't really need per-function explanation
+#![allow(clippy::missing_errors_doc)]
 
 mod chunker;
 mod crypto;
