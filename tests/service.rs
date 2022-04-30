@@ -51,7 +51,7 @@ fn user_reset(user: &TestUser) -> Result<()> {
 
 fn init_test(user: &TestUser) -> Result<Account> {
     etebase::init()?;
-    user_reset(&user)?;
+    user_reset(user)?;
 
     let client = Client::new(CLIENT_NAME, &test_url())?;
     let session_key = from_base64(sessionStorageKey)?;
@@ -206,7 +206,7 @@ fn simple_collection_sync() -> Result<()> {
 
     let collections = col_mgr.list("some.coltype", None)?;
     assert_eq!(collections.data().len(), 1);
-    verify_collection(&collections.data().first().unwrap(), &meta, content)?;
+    verify_collection(collections.data().first().unwrap(), &meta, content)?;
 
     let mut col_old = col_mgr.fetch(col.uid(), None)?;
     {
@@ -322,7 +322,7 @@ fn simple_item_sync() -> Result<()> {
     {
         let items = it_mgr.list(None)?;
         assert_eq!(items.data().len(), 1);
-        verify_item(&items.data().first().unwrap(), &meta, content)?;
+        verify_item(items.data().first().unwrap(), &meta, content)?;
     }
 
     let mut item_old = it_mgr.fetch(item.uid(), None)?;
@@ -339,7 +339,7 @@ fn simple_item_sync() -> Result<()> {
     {
         let items = it_mgr.list(None)?;
         assert_eq!(items.data().len(), 1);
-        verify_item(&items.data().first().unwrap(), &meta2, content)?;
+        verify_item(items.data().first().unwrap(), &meta2, content)?;
     }
 
     {
@@ -366,7 +366,7 @@ fn simple_item_sync() -> Result<()> {
     {
         let items = it_mgr.list(None)?;
         assert_eq!(items.data().len(), 1);
-        verify_item(&items.data().first().unwrap(), &meta2, content2)?;
+        verify_item(items.data().first().unwrap(), &meta2, content2)?;
     }
 
     etebase.logout()
@@ -398,7 +398,7 @@ fn collection_as_item() -> Result<()> {
         assert_eq!(items.data().len(), 1);
         let meta = col.item()?.meta()?;
         let first_item = items.data().first().unwrap();
-        verify_item(&first_item, &meta, col_content)?;
+        verify_item(first_item, &meta, col_content)?;
         // Also verify the collection metadata is good
         assert_eq!(&first_item.meta_generic::<ItemMetadata>()?, &col_meta);
     }
@@ -427,11 +427,7 @@ fn collection_as_item() -> Result<()> {
     {
         let collections = col_mgr.list("some.coltype", None)?;
         assert_eq!(collections.data().len(), 1);
-        verify_collection(
-            &collections.data().first().unwrap(),
-            &col_meta,
-            col_content2,
-        )?;
+        verify_collection(collections.data().first().unwrap(), &col_meta, col_content2)?;
     }
 
     let mut col = col_mgr.fetch(col.uid(), None)?;
@@ -442,11 +438,7 @@ fn collection_as_item() -> Result<()> {
     {
         let collections = col_mgr.list("some.coltype", None)?;
         assert_eq!(collections.data().len(), 1);
-        verify_collection(
-            &collections.data().first().unwrap(),
-            &col_meta,
-            col_content2,
-        )?;
+        verify_collection(collections.data().first().unwrap(), &col_meta, col_content2)?;
     }
 
     {
@@ -454,7 +446,7 @@ fn collection_as_item() -> Result<()> {
         assert_eq!(updates.data().len(), 1);
         let meta = col.item()?.meta()?;
         let first_item = updates.data().first().unwrap();
-        verify_item(&first_item, &meta, col_content2)?;
+        verify_item(first_item, &meta, col_content2)?;
         // Also verify the collection metadata is good
         assert_eq!(&first_item.meta_generic::<ItemMetadata>()?, &col_meta);
     }
@@ -493,7 +485,7 @@ fn collection_and_item_deletion() -> Result<()> {
         let items = it_mgr.list(Some(&fetch_options))?;
         assert_eq!(items.data().len(), 1);
         let first_item = items.data().first().unwrap();
-        verify_item(&first_item, &meta, content)?;
+        verify_item(first_item, &meta, content)?;
         assert!(first_item.is_deleted());
     }
 
@@ -506,7 +498,7 @@ fn collection_and_item_deletion() -> Result<()> {
         assert_eq!(collections.data().len(), 1);
 
         let first_col = collections.data().first().unwrap();
-        verify_collection(&first_col, &col_meta, col_content)?;
+        verify_collection(first_col, &col_meta, col_content)?;
         assert!(first_col.is_deleted());
     }
 
@@ -541,7 +533,7 @@ fn empty_content() -> Result<()> {
     {
         let items = it_mgr.list(None)?;
         let first_item = items.data().first().unwrap();
-        verify_item(&first_item, &meta, content)?;
+        verify_item(first_item, &meta, content)?;
     }
 
     etebase.logout()
@@ -1018,14 +1010,14 @@ fn collection_invitations() -> Result<()> {
     assert_eq!(&user2_profile.pubkey(), &user2_pubkey);
     // Off-band verification:
     assert_eq!(
-        pretty_fingerprint(&user2_profile.pubkey()),
+        pretty_fingerprint(user2_profile.pubkey()),
         pretty_fingerprint(user2_pubkey)
     );
 
     invite_mgr.invite(
         &col,
         USER2.username,
-        &user2_profile.pubkey(),
+        user2_profile.pubkey(),
         CollectionAccessLevel::ReadWrite,
     )?;
 
@@ -1052,7 +1044,7 @@ fn collection_invitations() -> Result<()> {
     invite_mgr.invite(
         &col,
         USER2.username,
-        &user2_profile.pubkey(),
+        user2_profile.pubkey(),
         CollectionAccessLevel::ReadWrite,
     )?;
 
@@ -1072,7 +1064,7 @@ fn collection_invitations() -> Result<()> {
     invite_mgr.invite(
         &col,
         USER2.username,
-        &user2_profile.pubkey(),
+        user2_profile.pubkey(),
         CollectionAccessLevel::ReadWrite,
     )?;
 
@@ -1115,7 +1107,7 @@ fn collection_invitations() -> Result<()> {
     invite_mgr.invite(
         &col,
         USER2.username,
-        &user2_profile.pubkey(),
+        user2_profile.pubkey(),
         CollectionAccessLevel::ReadWrite,
     )?;
 
@@ -1151,7 +1143,7 @@ fn collection_invitations() -> Result<()> {
 
         let stoken = new_col.stoken();
 
-        let fetch_options = FetchOptions::new().stoken(stoken.as_deref());
+        let fetch_options = FetchOptions::new().stoken(stoken);
         let collections = col_mgr2.list("some.coltype", Some(&fetch_options))?;
         assert_eq!(collections.data().len(), 0);
         assert_eq!(collections.removed_memberships().unwrap().len(), 1);
@@ -1182,7 +1174,7 @@ fn iterating_invitations() -> Result<()> {
         invite_mgr.invite(
             &col,
             USER2.username,
-            &user2_profile.pubkey(),
+            user2_profile.pubkey(),
             CollectionAccessLevel::ReadWrite,
         )?;
     }
@@ -1255,7 +1247,7 @@ fn collection_access_level() -> Result<()> {
     invite_mgr.invite(
         &col,
         USER2.username,
-        &user2_profile.pubkey(),
+        user2_profile.pubkey(),
         CollectionAccessLevel::ReadWrite,
     )?;
 
