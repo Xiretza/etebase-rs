@@ -1165,6 +1165,7 @@ impl CollectionInvitationManager {
     ///
     /// This is the key users see when we send invitations.
     /// Can be pretty printed with [crate::pretty_fingerprint].
+    #[must_use]
     pub fn pubkey(&self) -> &[u8] {
         self.identity_crypto_manager.pubkey()
     }

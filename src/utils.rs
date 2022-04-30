@@ -30,6 +30,7 @@ pub const SYMMETRIC_NONCE_SIZE: usize = 24; // sodium.crypto_aead_xchacha20poly1
 ///
 /// # Arguments:
 /// * `size` - the size of the returned buffer (in bytes)
+#[must_use]
 pub fn randombytes(size: usize) -> Vec<u8> {
     sodiumoxide::randombytes::randombytes(size)
 }
@@ -42,6 +43,7 @@ pub fn randombytes(size: usize) -> Vec<u8> {
 /// # Arguments:
 /// * `seed` - the seed to generate the random data from
 /// * `size` - the size of the returned buffer (in bytes)
+#[must_use]
 pub fn randombytes_deterministic(size: usize, seed: &[u8; 32]) -> Vec<u8> {
     // Not exactly like the sodium randombytes_deterministic but close enough
     let nonce =
@@ -58,6 +60,7 @@ pub fn randombytes_deterministic(size: usize, seed: &[u8; 32]) -> Vec<u8> {
 /// # Arguments:
 /// * `x` - the first buffer
 /// * `y` - the second buffer
+#[must_use]
 pub fn memcmp(x: &[u8], y: &[u8]) -> bool {
     sodiumoxide::utils::memcmp(x, y)
 }
@@ -109,6 +112,7 @@ pub(crate) fn shuffle<T>(a: &mut [T]) -> Vec<usize> {
 ///
 /// # Arguments:
 /// * `length` - the length of the buffer to pad
+#[must_use]
 pub fn get_padding(length: u32) -> u32 {
     // Use the padme padding scheme for efficiently
     // https://www.petsymposium.org/2019/files/papers/issue4/popets-2019-0056.pdf

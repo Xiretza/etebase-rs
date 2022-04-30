@@ -79,6 +79,7 @@ impl Client {
     }
 
     /// Return the server url associated with this client
+    #[must_use]
     pub fn server_url(&self) -> &Url {
         &self.api_base
     }
