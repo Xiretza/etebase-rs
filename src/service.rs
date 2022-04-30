@@ -203,7 +203,7 @@ impl Account {
 
         let main_key = derive_key(&login_challenge.salt, password)?;
 
-        Self::login_common(client, username, main_key, login_challenge)
+        Self::login_common(client, username, main_key, &login_challenge)
     }
 
     /// Login a user with a key and return a handle to an [Account] object
@@ -235,14 +235,14 @@ impl Account {
 
         let main_key = main_key.to_vec();
 
-        Self::login_common(client, username, main_key, login_challenge)
+        Self::login_common(client, username, main_key, &login_challenge)
     }
 
     fn login_common(
         mut client: Client,
         username: &str,
         main_key: Vec<u8>,
-        login_challenge: LoginChallange,
+        login_challenge: &LoginChallange,
     ) -> Result<Self> {
         let authenticator = Authenticator::new(&client);
 
