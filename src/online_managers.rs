@@ -299,11 +299,9 @@ impl<'a> Authenticator<'a> {
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
         let url = self.api_base.join("login_challenge/")?;
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
-        let res = res.bytes();
-
-        let ret: LoginChallange = rmp_serde::from_read_ref(&res)?;
+        let ret = self.client.post(url.as_str(), body)?;
+        ret.error_for_status()?;
+        let ret = rmp_serde::from_read_ref(&ret.bytes())?;
 
         Ok(ret)
     }
@@ -326,11 +324,9 @@ impl<'a> Authenticator<'a> {
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
         let url = self.api_base.join("signup/")?;
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
-        let res = res.bytes();
-
-        let ret: LoginResponse = rmp_serde::from_read_ref(&res)?;
+        let ret = self.client.post(url.as_str(), body)?;
+        ret.error_for_status()?;
+        let ret = rmp_serde::from_read_ref(&ret.bytes())?;
 
         Ok(ret)
     }
@@ -343,11 +339,9 @@ impl<'a> Authenticator<'a> {
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
         let url = self.api_base.join("login/")?;
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
-        let res = res.bytes();
-
-        let ret: LoginResponse = rmp_serde::from_read_ref(&res)?;
+        let ret = self.client.post(url.as_str(), body)?;
+        ret.error_for_status()?;
+        let ret = rmp_serde::from_read_ref(&ret.bytes())?;
 
         Ok(ret)
     }
@@ -381,11 +375,9 @@ impl<'a> Authenticator<'a> {
         }
 
         let url = self.api_base.join("dashboard_url/")?;
-        let res = self.client.post(url.as_str(), vec![])?;
-        res.error_for_status()?;
-        let res = res.bytes();
-
-        let ret: Ret = rmp_serde::from_read_ref(&res)?;
+        let ret = self.client.post(url.as_str(), vec![])?;
+        ret.error_for_status()?;
+        let ret: Ret = rmp_serde::from_read_ref(&ret.bytes())?;
 
         Ok(ret.url)
     }
