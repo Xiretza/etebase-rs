@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
-#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)]
 
 mod chunker;
 mod crypto;
