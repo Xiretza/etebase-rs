@@ -92,7 +92,7 @@ fn is_etebase_server() -> Result<()> {
     // Verify we also fail correctly for login
     let client = Client::new(CLIENT_NAME, &test_url)?;
     assert_err!(
-        Account::login(client.clone(), USER2.username, USER2.password),
+        Account::login(client, USER2.username, USER2.password),
         Error::NotFound(_)
     );
 
@@ -403,7 +403,7 @@ fn collection_as_item() -> Result<()> {
         assert_eq!(&first_item.meta_generic::<ItemMetadata>()?, &col_meta);
     }
 
-    let meta = ItemMetadata::new().clone();
+    let meta = ItemMetadata::new();
     let content = b"Item data";
     let item = it_mgr.create(&meta, content)?;
 
@@ -1365,7 +1365,7 @@ fn chunking_large_data() -> Result<()> {
 
     let it_mgr = col_mgr.item_manager(&col)?;
 
-    let meta = ItemMetadata::new().clone();
+    let meta = ItemMetadata::new();
     let content = randombytes_deterministic(120 * 1024, &[0; 32]); // 120kb of pseuedorandom data
 
     let mut item = it_mgr.create(&meta, &content)?;
@@ -1517,7 +1517,7 @@ fn login_and_password_change() -> Result<()> {
         Error::Unauthorized(_)
     );
 
-    let mut etebase2 = Account::login(client.clone(), USER2.username, another_password)?;
+    let mut etebase2 = Account::login(client, USER2.username, another_password)?;
 
     let col_mgr2 = etebase2.collection_manager()?;
 
@@ -1566,7 +1566,7 @@ fn session_save_and_restore() -> Result<()> {
             Account::restore(client.clone(), &saved, None),
             Error::Encryption(_)
         );
-        let etebase2 = Account::restore(client.clone(), &saved, Some(&key))?;
+        let etebase2 = Account::restore(client, &saved, Some(&key))?;
 
         let col_mgr2 = etebase2.collection_manager()?;
         let collections = col_mgr2.list("some.coltype", None)?;

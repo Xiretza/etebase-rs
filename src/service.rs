@@ -248,7 +248,6 @@ impl Account {
 
         let version = login_challenge.version;
 
-        let main_key = main_key.to_vec();
         let main_crypto_manager = MainCryptoManager::new(try_into!(&main_key[..])?, version)?;
         let login_crypto_manager = main_crypto_manager.login_crypto_manager()?;
 
@@ -754,7 +753,7 @@ impl ItemManager {
         collection_crypto_manager: Arc<CollectionCryptoManager>,
         collection: &Collection,
     ) -> Result<Self> {
-        let item_manager_online = ItemManagerOnline::new(Arc::clone(&client), &collection.col);
+        let item_manager_online = ItemManagerOnline::new(client, &collection.col);
         Ok(Self {
             collection_crypto_manager,
             item_manager_online,
@@ -1064,7 +1063,7 @@ impl CollectionInvitationManager {
         account_crypto_manager: Arc<AccountCryptoManager>,
         identity_crypto_manager: BoxCryptoManager,
     ) -> Result<Self> {
-        let invitation_manager_online = CollectionInvitationManagerOnline::new(Arc::clone(&client));
+        let invitation_manager_online = CollectionInvitationManagerOnline::new(client);
         Ok(Self {
             account_crypto_manager,
             identity_crypto_manager,
@@ -1178,8 +1177,7 @@ pub struct CollectionMemberManager {
 impl CollectionMemberManager {
     #[allow(clippy::unnecessary_wraps)]
     fn new(client: Arc<Client>, collection: &Collection) -> Result<Self> {
-        let member_manager_online =
-            CollectionMemberManagerOnline::new(Arc::clone(&client), &collection.col);
+        let member_manager_online = CollectionMemberManagerOnline::new(client, &collection.col);
         Ok(Self {
             member_manager_online,
         })

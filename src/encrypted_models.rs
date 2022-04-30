@@ -477,7 +477,7 @@ impl EncryptedCollection {
             version: CURRENT_VERSION,
             username: username.to_owned(),
             collection: self.uid().to_owned(),
-            access_level: access_level.to_owned(),
+            access_level,
 
             signed_encryption_key,
             from_username: None,
