@@ -520,7 +520,10 @@ impl CollectionManagerOnline {
 
         let serialized: CollectionListResponse<EncryptedCollection> =
             rmp_serde::from_read_ref(&res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized
+            .data
+            .iter()
+            .for_each(EncryptedCollection::mark_saved);
 
         Ok(serialized)
     }
@@ -590,7 +593,7 @@ impl ItemManagerOnline {
         let res = res.bytes();
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_read_ref(&res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized.data.iter().for_each(EncryptedItem::mark_saved);
 
         Ok(serialized)
     }
@@ -646,7 +649,7 @@ impl ItemManagerOnline {
         let res = res.bytes();
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_read_ref(&res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized.data.iter().for_each(EncryptedItem::mark_saved);
 
         Ok(serialized)
     }
@@ -670,7 +673,7 @@ impl ItemManagerOnline {
         let res = res.bytes();
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_read_ref(&res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized.data.iter().for_each(EncryptedItem::mark_saved);
 
         Ok(serialized)
     }
@@ -689,7 +692,7 @@ impl ItemManagerOnline {
                 etag: x.last_etag(),
             })
             .collect();
-        let deps = if !deps.is_empty() { Some(deps) } else { None };
+        let deps = if deps.is_empty() { None } else { Some(deps) };
         let body_struct = ItemBatchBody {
             items: &items,
             deps,
@@ -725,7 +728,7 @@ impl ItemManagerOnline {
                 etag: x.last_etag(),
             })
             .collect();
-        let deps = if !deps.is_empty() { Some(deps) } else { None };
+        let deps = if deps.is_empty() { None } else { Some(deps) };
         let body_struct = ItemBatchBody {
             items: &items,
             deps,
@@ -749,10 +752,10 @@ impl ItemManagerOnline {
         options: Option<&FetchOptions>,
     ) -> Result<()> {
         let chunk_uid = &chunk.0;
-        let chunk_content = match &chunk.1 {
-            Some(content) => content,
-            None => return Err(Error::ProgrammingError("Tried uploading a missing chunk.")),
-        };
+        let chunk_content = chunk
+            .1
+            .as_ref()
+            .ok_or(Error::ProgrammingError("Tried uploading a missing chunk."))?;
 
         let url = apply_fetch_options(
             self.api_base
@@ -760,7 +763,7 @@ impl ItemManagerOnline {
             options,
         );
         // FIXME: We are copying the vec here, we shouldn't! Fix the client.
-        let res = self.client.put(url.as_str(), chunk_content.to_vec())?;
+        let res = self.client.put(url.as_str(), chunk_content.clone())?;
         res.error_for_status()?;
 
         Ok(())

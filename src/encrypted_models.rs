@@ -245,24 +245,19 @@ impl SignedInvitation {
 
     /// The public key of the inviting user
     pub fn from_pubkey(&self) -> &[u8] {
-        match self.from_pubkey.as_deref() {
-            Some(from_pubkey) => from_pubkey,
-            None => panic!("Can never happen. Tried getting empty pubkey."),
-        }
+        // FIXME: why is it an Option then?
+        self.from_pubkey
+            .as_deref()
+            .expect("Can never happen. Tried getting empty pubkey.")
     }
 
     pub(crate) fn decrypted_encryption_key(
         &self,
         identity_crypto_manager: &BoxCryptoManager,
     ) -> Result<Vec<u8>> {
-        let from_pubkey = match self.from_pubkey.as_deref() {
-            Some(from_pubkey) => from_pubkey,
-            None => {
-                return Err(Error::ProgrammingError(
-                    "Missing invitation encryption key.",
-                ))
-            }
-        };
+        let from_pubkey = self.from_pubkey.as_deref().ok_or(Error::ProgrammingError(
+            "Missing invitation encryption key.",
+        ))?;
         identity_crypto_manager.decrypt(&self.signed_encryption_key, try_into!(from_pubkey)?)
     }
 }
@@ -325,31 +320,30 @@ impl EncryptedCollection {
 
     pub fn cache_load(cached: &[u8]) -> Result<Self> {
         let cached: CachedContent = rmp_serde::from_read_ref(cached)?;
-        let ret: std::result::Result<Self, _> = rmp_serde::from_read_ref(&cached.data);
-        // FIXME: remove this whole match once "collection-type-migration" is done
-        Ok(match ret {
-            Ok(ret) => ret,
-            Err(_) => {
-                #[derive(Deserialize)]
-                #[serde(rename_all = "camelCase")]
-                struct EncryptedCollectionLegacy {
-                    item: EncryptedItem,
-                    access_level: CollectionAccessLevel,
-                    #[serde(with = "serde_bytes")]
-                    collection_key: Vec<u8>,
-                    stoken: Option<String>,
-                }
 
-                let ret: EncryptedCollectionLegacy = rmp_serde::from_read_ref(&cached.data)?;
+        if let Ok(ret) = rmp_serde::from_read_ref(&cached.data) {
+            return Ok(ret);
+        }
 
-                Self {
-                    item: ret.item,
-                    access_level: ret.access_level,
-                    collection_key: ret.collection_key,
-                    stoken: ret.stoken,
-                    collection_type: None,
-                }
-            }
+        // FIXME: remove this whole part once "collection-type-migration" is done
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct EncryptedCollectionLegacy {
+            item: EncryptedItem,
+            access_level: CollectionAccessLevel,
+            #[serde(with = "serde_bytes")]
+            collection_key: Vec<u8>,
+            stoken: Option<String>,
+        }
+
+        let ret: EncryptedCollectionLegacy = rmp_serde::from_read_ref(&cached.data)?;
+
+        Ok(Self {
+            item: ret.item,
+            access_level: ret.access_level,
+            collection_key: ret.collection_key,
+            stoken: ret.stoken,
+            collection_type: None,
         })
     }
 
@@ -585,7 +579,7 @@ impl EncryptedRevision {
         // We hash the chunks separately so that the server can (in the future) return just the hash instead of the full
         // chunk list if requested - useful for asking for collection updates
         let mut chunks_hash = CryptoMac::new(None)?;
-        for chunk in self.chunks.iter() {
+        for chunk in &self.chunks {
             chunks_hash.update(&from_base64(&chunk.0)?)?;
         }
 
@@ -838,7 +832,7 @@ impl EncryptedItem {
         let ret = Self {
             uid: self.uid.to_string(),
             version: self.version,
-            encryption_key: self.encryption_key.as_ref().map(|x| x.to_vec()),
+            encryption_key: self.encryption_key.as_ref().cloned(),
 
             content: revision,
 

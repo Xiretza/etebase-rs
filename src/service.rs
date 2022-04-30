@@ -193,14 +193,10 @@ impl Account {
 
         let authenticator = Authenticator::new(&client);
         let login_challenge = match authenticator.get_login_challenge(username) {
-            Err(Error::Unauthorized(s)) => {
-                // FIXME: fragile, we should have a proper error value or actually use codes
-                if s == "User not properly init" {
-                    let user = User::new(username, "init@localhost");
-                    return Self::signup(client, &user, password);
-                } else {
-                    return Err(Error::Unauthorized(s));
-                }
+            // FIXME: fragile, we should have a proper error value or actually use codes
+            Err(Error::Unauthorized(s)) if s == "User not properly init" => {
+                let user = User::new(username, "init@localhost");
+                return Self::signup(client, &user, password);
             }
             rest => rest?,
         };
@@ -229,14 +225,10 @@ impl Account {
 
         let authenticator = Authenticator::new(&client);
         let login_challenge = match authenticator.get_login_challenge(username) {
-            Err(Error::Unauthorized(s)) => {
-                // FIXME: fragile, we should have a proper error value or actually use codes
-                if s == "User not properly init" {
-                    let user = User::new(username, "init@localhost");
-                    return Self::signup_key(client, &user, main_key);
-                } else {
-                    return Err(Error::Unauthorized(s));
-                }
+            // FIXME: fragile, we should have a proper error value or actually use codes
+            Err(Error::Unauthorized(s)) if s == "User not properly init" => {
+                let user = User::new(username, "init@localhost");
+                return Self::signup_key(client, &user, main_key);
             }
             rest => rest?,
         };

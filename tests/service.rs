@@ -104,7 +104,7 @@ fn get_dashboard_url() -> Result<()> {
     let etebase = init_test(&USER)?;
 
     match etebase.fetch_dashboard_url() {
-        Ok(url) => assert!(url.len() > 0),
+        Ok(url) => assert!(!url.is_empty()),
         err => assert_err!(err, Error::Http(_)),
     };
 
