@@ -362,7 +362,8 @@ impl CryptoMac {
 
 fn get_encoded_chunk(content: &[u8], suffix: &str) -> String {
     let num =
-        (((content[0] as u32) << 16) + ((content[1] as u32) << 8) + (content[2] as u32)) % 100000;
+        ((u32::from(content[0]) << 16) + (u32::from(content[1]) << 8) + u32::from(content[2]))
+            % 100_000;
     return format!("{:0>5}{}", num, suffix);
 }
 
@@ -388,13 +389,13 @@ pub fn pretty_fingerprint(content: &[u8]) -> String {
     let parts = (0..10).into_iter().map(|i| {
         let suffix = if i % 4 == 3 { "\n" } else { delimiter };
 
-        last_num = (last_num << 3) | ((fingerprint[i] as u32) & 0xE0) >> 5;
+        last_num = (last_num << 3) | (u32::from(fingerprint[i]) & 0xE0) >> 5;
         get_encoded_chunk(&fingerprint[i * 3..], suffix)
     });
 
     let last_num = (0..10).into_iter().fold(0, |accum, i| {
-        (accum << 3) | ((fingerprint[i] as u32) & 0xE0) >> 5
-    }) % 100000;
+        (accum << 3) | (u32::from(fingerprint[i]) & 0xE0) >> 5
+    }) % 100_000;
     let last_num = format!("{:0>5}", last_num);
     let parts = parts
         .chain(std::iter::once(get_encoded_chunk(
