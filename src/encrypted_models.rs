@@ -109,7 +109,7 @@ impl ItemMetadata {
     /// # Arguments:
     /// * `type` - the type to be set
     pub fn set_item_type(&mut self, type_: Option<impl Into<String>>) -> &mut Self {
-        self.type_ = type_.map(|x| x.into());
+        self.type_ = type_.map(Into::into);
         self
     }
 
@@ -125,7 +125,7 @@ impl ItemMetadata {
     /// # Arguments:
     /// * `name` - the name to be set
     pub fn set_name(&mut self, name: Option<impl Into<String>>) -> &mut Self {
-        self.name = name.map(|x| x.into());
+        self.name = name.map(Into::into);
         self
     }
 
@@ -153,7 +153,7 @@ impl ItemMetadata {
     /// # Arguments:
     /// * `description` - the description to be set
     pub fn set_description(&mut self, description: Option<impl Into<String>>) -> &mut Self {
-        self.description = description.map(|x| x.into());
+        self.description = description.map(Into::into);
         self
     }
 
@@ -167,7 +167,7 @@ impl ItemMetadata {
     /// # Arguments:
     /// * `color` - the color to be set in `#RRGGBB` or `#RRGGBBAA` format
     pub fn set_color(&mut self, color: Option<impl Into<String>>) -> &mut Self {
-        self.color = color.map(|x| x.into());
+        self.color = color.map(Into::into);
         self
     }
 
@@ -245,10 +245,10 @@ impl SignedInvitation {
 
     /// The public key of the inviting user
     pub fn sender_pubkey(&self) -> &[u8] {
-        match self.from_pubkey.as_deref() {
-            Some(from_pubkey) => from_pubkey,
-            None => panic!("Can never happen. Tried getting empty pubkey."),
-        }
+        // FIXME: why is it an Option then?
+        self.from_pubkey
+            .as_deref()
+            .expect("Can never happen. Tried getting empty pubkey.")
     }
 
     #[deprecated = "This method has been renamed to sender_username() to avoid potential confusion regarding its name"]
@@ -337,31 +337,30 @@ impl EncryptedCollection {
 
     pub fn cache_load(cached: &[u8]) -> Result<Self> {
         let cached: CachedContent = rmp_serde::from_read_ref(cached)?;
-        let ret: std::result::Result<Self, _> = rmp_serde::from_read_ref(&cached.data);
-        // FIXME: remove this whole match once "collection-type-migration" is done
-        Ok(match ret {
-            Ok(ret) => ret,
-            Err(_) => {
-                #[derive(Deserialize)]
-                #[serde(rename_all = "camelCase")]
-                struct EncryptedCollectionLegacy {
-                    item: EncryptedItem,
-                    access_level: CollectionAccessLevel,
-                    #[serde(with = "serde_bytes")]
-                    collection_key: Vec<u8>,
-                    stoken: Option<String>,
-                }
 
-                let ret: EncryptedCollectionLegacy = rmp_serde::from_read_ref(&cached.data)?;
+        if let Ok(ret) = rmp_serde::from_read_ref(&cached.data) {
+            return Ok(ret);
+        }
 
-                Self {
-                    item: ret.item,
-                    access_level: ret.access_level,
-                    collection_key: ret.collection_key,
-                    stoken: ret.stoken,
-                    collection_type: None,
-                }
-            }
+        // FIXME: remove this whole part once "collection-type-migration" is done
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct EncryptedCollectionLegacy {
+            item: EncryptedItem,
+            access_level: CollectionAccessLevel,
+            #[serde(with = "serde_bytes")]
+            collection_key: Vec<u8>,
+            stoken: Option<String>,
+        }
+
+        let ret: EncryptedCollectionLegacy = rmp_serde::from_read_ref(&cached.data)?;
+
+        Ok(Self {
+            item: ret.item,
+            access_level: ret.access_level,
+            collection_key: ret.collection_key,
+            stoken: ret.stoken,
+            collection_type: None,
         })
     }
 
@@ -600,7 +599,7 @@ impl EncryptedRevision {
         // We hash the chunks separately so that the server can (in the future) return just the hash instead of the full
         // chunk list if requested - useful for asking for collection updates
         let mut chunks_hash = CryptoMac::new(None)?;
-        for chunk in self.chunks.iter() {
+        for chunk in &self.chunks {
             chunks_hash.update(&from_base64(&chunk.0)?)?;
         }
 
@@ -708,15 +707,14 @@ impl EncryptedRevision {
                 .enumerate()
                 .filter_map(|(i, chunk)| {
                     let uid = &chunk.0;
-                    match uid_indices.get(uid) {
-                        Some(previous_index) => {
-                            indices[i] = *previous_index;
-                            None
-                        }
-                        None => {
-                            uid_indices.insert(uid.to_string(), i);
-                            Some(chunk)
-                        }
+
+                    #[allow(clippy::option_if_let_else)] // false positive
+                    if let Some(previous_index) = uid_indices.get(uid) {
+                        indices[i] = *previous_index;
+                        None
+                    } else {
+                        uid_indices.insert(uid.to_string(), i);
+                        Some(chunk)
                     }
                 })
                 .collect();
@@ -857,7 +855,7 @@ impl EncryptedItem {
         let ret = Self {
             uid: self.uid.to_string(),
             version: self.version,
-            encryption_key: self.encryption_key.as_ref().map(|x| x.to_vec()),
+            encryption_key: self.encryption_key.as_ref().cloned(),
 
             content: revision,
 
