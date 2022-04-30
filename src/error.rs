@@ -47,6 +47,7 @@ pub enum Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[allow(clippy::match_same_arms)] // same order as in type declaration
         match self {
             Error::Generic(s) => s.fmt(f),
             Error::UrlParse(s) => s.fmt(f),
