@@ -396,7 +396,7 @@ fn collection_as_item() -> Result<()> {
         let first_item = items.data().first().unwrap();
         verify_item(first_item, &meta, col_content)?;
         // Also verify the collection metadata is good
-        assert_eq!(&first_item.meta_generic::<ItemMetadata>()?, &col_meta);
+        assert_eq!(&first_item.meta()?, &col_meta);
     }
 
     let meta = ItemMetadata::new();
@@ -444,7 +444,7 @@ fn collection_as_item() -> Result<()> {
         let first_item = updates.data().first().unwrap();
         verify_item(first_item, &meta, col_content2)?;
         // Also verify the collection metadata is good
-        assert_eq!(&first_item.meta_generic::<ItemMetadata>()?, &col_meta);
+        assert_eq!(&first_item.meta()?, &col_meta);
     }
 
     etebase.logout()

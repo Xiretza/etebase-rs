@@ -18,8 +18,7 @@ use super::{
     error::{Error, Result},
     utils::{
         buffer_pad, buffer_pad_fixed, buffer_pad_small, buffer_unpad, buffer_unpad_fixed,
-        from_base64, memcmp, randombytes, shuffle, to_base64, MsgPackSerilization, StringBase64,
-        SYMMETRIC_KEY_SIZE,
+        from_base64, memcmp, randombytes, shuffle, to_base64, StringBase64, SYMMETRIC_KEY_SIZE,
     },
     CURRENT_VERSION,
 };
@@ -81,9 +80,13 @@ impl ItemCryptoManager {
     }
 }
 
-/// Metadata of the item
+/// Metadata of an [`Item`](crate::Item) or [`Collection`](crate::Collection).
+///
+/// It is possible to store arbitrary application-specific metadata along with the predefined
+/// fields using the generic parameter `Ext`. The type passed here should implement `serde`'s
+/// [`Serialize`] and [`Deserialize`] traits.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
-pub struct ItemMetadata {
+pub struct ItemMetadata<Ext = ()> {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     type_: Option<String>,
@@ -96,13 +99,30 @@ pub struct ItemMetadata {
     description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     color: Option<String>,
+
+    #[serde(flatten)]
+    extensions: Ext,
 }
 
-impl ItemMetadata {
+impl ItemMetadata<()> {
     /// Create a new metadata object
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+}
+
+impl<Ext> ItemMetadata<Ext> {
+    /// Create a new metadata object with some application-specific extension data
+    pub fn new_with_extensions(extensions: Ext) -> Self {
+        Self {
+            type_: None,
+            name: None,
+            mtime: None,
+            description: None,
+            color: None,
+            extensions,
+        }
     }
 
     /// Set the item type
@@ -181,17 +201,40 @@ impl ItemMetadata {
     pub fn color(&self) -> Option<&str> {
         self.color.as_deref()
     }
-}
 
-impl MsgPackSerilization for ItemMetadata {
-    type Output = ItemMetadata;
-
-    fn to_msgpack(&self) -> Result<Vec<u8>> {
-        Ok(rmp_serde::to_vec_named(self)?)
+    /// Removes any custom extensions and return an `ItemMetadata` with only the fields specified in
+    /// the specification.
+    pub fn without_extensions(self) -> ItemMetadata<()> {
+        ItemMetadata {
+            type_: self.type_,
+            name: self.name,
+            mtime: self.mtime,
+            description: self.description,
+            color: self.color,
+            extensions: (),
+        }
     }
 
-    fn from_msgpack(data: &[u8]) -> Result<Self::Output> {
-        Ok(rmp_serde::from_slice(data)?)
+    /// Sets the custom metadata extensions
+    pub fn with_extensions<NewExt>(self, new_extensions: NewExt) -> ItemMetadata<NewExt> {
+        ItemMetadata {
+            type_: self.type_,
+            name: self.name,
+            mtime: self.mtime,
+            description: self.description,
+            color: self.color,
+            extensions: new_extensions,
+        }
+    }
+
+    /// Returns a reference to the custom extensions stored in the metadata, if any
+    pub fn extensions(&self) -> &Ext {
+        &self.extensions
+    }
+
+    /// Returns a mutable reference to the custom extensions stored in the metadata, if any
+    pub fn extensions_mut(&mut self) -> &mut Ext {
+        &mut self.extensions
     }
 }
 
@@ -479,10 +522,8 @@ impl EncryptedCollection {
             None => {
                 let crypto_manager = self.crypto_manager(account_crypto_manager)?;
                 let meta_raw = self.meta(&crypto_manager)?;
-                Ok(ItemMetadata::from_msgpack(&meta_raw)?
-                    .item_type()
-                    .unwrap_or("BAD TYPE")
-                    .to_owned())
+                let meta: ItemMetadata<()> = rmp_serde::from_slice(&meta_raw)?;
+                Ok(meta.item_type().unwrap_or("BAD TYPE").to_owned())
             }
         }
     }

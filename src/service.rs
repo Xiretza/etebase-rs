@@ -8,7 +8,7 @@ use std::iter;
 use std::sync::Arc;
 
 use crate::utils::{PRIVATE_KEY_SIZE, SALT_SIZE};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use super::{
     crypto::{derive_key, BoxCryptoManager, CryptoManager, LoginCryptoManager},
@@ -25,8 +25,7 @@ use super::{
         LoginChallange, LoginResponseUser, User, UserProfile,
     },
     utils::{
-        buffer_unpad, from_base64, randombytes_array, to_base64, MsgPackSerilization, StrBase64,
-        SYMMETRIC_KEY_SIZE,
+        buffer_unpad, from_base64, randombytes_array, to_base64, StrBase64, SYMMETRIC_KEY_SIZE,
     },
 };
 
@@ -569,13 +568,13 @@ impl CollectionManager {
     /// * `collection_type` - the type of [`Item`]s stored in the collection
     /// * `meta` - the [`ItemMetadata`] for the collection
     /// * `content` - the collection's content as a byte array. This is unrelated to the [`Item`]s in the collection.
-    pub fn create<T: MsgPackSerilization>(
+    pub fn create<Ext: Serialize>(
         &self,
         collection_type: &str,
-        meta: &T,
+        meta: &ItemMetadata<Ext>,
         content: &[u8],
     ) -> Result<Collection> {
-        let meta = meta.to_msgpack()?;
+        let meta = rmp_serde::to_vec_named(meta)?;
         self.create_raw(collection_type, &meta, content)
     }
 
@@ -803,8 +802,8 @@ impl ItemManager {
     /// # Arguments:
     /// * `meta` - the [`ItemMetadata`] for the item
     /// * `content` - the item's content as a byte array
-    pub fn create<T: MsgPackSerilization>(&self, meta: &T, content: &[u8]) -> Result<Item> {
-        let meta = meta.to_msgpack()?;
+    pub fn create<Ext: Serialize>(&self, meta: &ItemMetadata<Ext>, content: &[u8]) -> Result<Item> {
+        let meta = rmp_serde::to_vec_named(meta)?;
         self.create_raw(&meta, content)
     }
 
@@ -1326,22 +1325,26 @@ impl Collection {
     ///
     /// # Arguments:
     /// * `meta` - the [`ItemMetadata`] object to be set for the collection
-    pub fn set_meta<T: MsgPackSerilization>(&mut self, meta: &T) -> Result<()> {
-        let meta = meta.to_msgpack()?;
+    pub fn set_meta<Ext: Serialize>(&mut self, meta: &ItemMetadata<Ext>) -> Result<()> {
+        let meta = rmp_serde::to_vec_named(meta)?;
         self.col.set_meta(&self.cm, &meta)
     }
 
     /// Return the [`ItemMetadata`] of the collection
-    pub fn meta(&self) -> Result<ItemMetadata> {
-        self.meta_generic::<ItemMetadata>()
+    pub fn meta(&self) -> Result<ItemMetadata<()>> {
+        self.meta_with_extensions::<()>()
     }
 
-    /// Return the [`ItemMetadata`] of the collection deserializing using a generic metadata object
-    ///
-    /// The metadata object needs to implement the [`MsgPackSerilization`] trait.
-    pub fn meta_generic<T: MsgPackSerilization>(&self) -> Result<T::Output> {
+    /// Return the [`ItemMetadata`] of the collection along with some application-specific
+    /// extension data.
+    pub fn meta_with_extensions<Ext>(&self) -> Result<ItemMetadata<Ext>>
+    where
+        Ext: DeserializeOwned,
+    {
         let decrypted = self.col.meta(&self.cm)?;
-        T::from_msgpack(&decrypted)
+        let meta = rmp_serde::from_slice(&decrypted)?;
+
+        Ok(meta)
     }
 
     /// Set metadata for the collection object from a byte array
@@ -1447,22 +1450,26 @@ impl Item {
     ///
     /// # Arguments:
     /// * `meta` - the [`ItemMetadata`] object to be set for the item
-    pub fn set_meta<T: MsgPackSerilization>(&mut self, meta: &T) -> Result<()> {
-        let meta = meta.to_msgpack()?;
+    pub fn set_meta<Ext: Serialize>(&mut self, meta: &ItemMetadata<Ext>) -> Result<()> {
+        let meta = rmp_serde::to_vec_named(meta)?;
         self.item.set_meta(&self.cm, &meta)
     }
 
     /// Return the [`ItemMetadata`] of the item
-    pub fn meta(&self) -> Result<ItemMetadata> {
-        self.meta_generic::<ItemMetadata>()
+    pub fn meta(&self) -> Result<ItemMetadata<()>> {
+        self.meta_with_extensions::<()>()
     }
 
-    /// Return the [`ItemMetadata`] of the collection deserializing using a generic metadata object
-    ///
-    /// The metadata object needs to implement the [`MsgPackSerilization`] trait.
-    pub fn meta_generic<T: MsgPackSerilization>(&self) -> Result<T::Output> {
+    /// Return the [`ItemMetadata`] of the item along with some application-specific extension
+    /// data.
+    pub fn meta_with_extensions<Ext>(&self) -> Result<ItemMetadata<Ext>>
+    where
+        Ext: DeserializeOwned,
+    {
         let decrypted = self.item.meta(&self.cm)?;
-        T::from_msgpack(&decrypted)
+        let meta = rmp_serde::from_slice(&decrypted)?;
+
+        Ok(meta)
     }
 
     /// Set metadata for the item object from a byte array

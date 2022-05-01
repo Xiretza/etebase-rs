@@ -291,21 +291,6 @@ pub(crate) fn buffer_unpad_fixed(buf: &[u8], blocksize: usize) -> Result<Vec<u8>
     Ok(buf)
 }
 
-/// A trait for serializing and deserializing to MsgPack
-pub trait MsgPackSerilization {
-    /// The type of the struct implementing this trait
-    type Output;
-
-    /// Convert self to a msgpack encoded buffer
-    fn to_msgpack(&self) -> Result<Vec<u8>>;
-
-    /// Create the struct from a MsgPack encoded buffer
-    ///
-    /// # Arguments:
-    /// * `data` - the MsgPack buffer
-    fn from_msgpack(data: &[u8]) -> Result<Self::Output>;
-}
-
 #[cfg(test)]
 mod tests {
     #[test]
