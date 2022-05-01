@@ -10,9 +10,11 @@ use etebase::{
     pretty_fingerprint, Account, Client, Collection, CollectionAccessLevel, FetchOptions, Item,
     ItemMetadata, PrefetchOption, User,
 };
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
-use std::collections::HashSet;
-use std::iter;
+use std::collections::{HashMap, HashSet};
+use std::{fmt, iter};
 
 const CLIENT_NAME: &str = "etebase-tests";
 
@@ -61,16 +63,22 @@ fn init_test(user: &TestUser) -> Result<Account> {
     Ok(ret)
 }
 
-fn verify_collection(col: &Collection, meta: &ItemMetadata, content: &[u8]) -> Result<()> {
+fn verify_collection<Ext>(col: &Collection, meta: &ItemMetadata<Ext>, content: &[u8]) -> Result<()>
+where
+    Ext: fmt::Debug + PartialEq + DeserializeOwned,
+{
     col.verify()?;
-    assert_eq!(&col.meta()?, meta);
+    assert_eq!(&col.meta_with_extensions()?, meta);
     assert_eq!(col.content()?, content);
     Ok(())
 }
 
-fn verify_item(item: &Item, meta: &ItemMetadata, content: &[u8]) -> Result<()> {
+fn verify_item<Ext>(item: &Item, meta: &ItemMetadata<Ext>, content: &[u8]) -> Result<()>
+where
+    Ext: fmt::Debug + PartialEq + DeserializeOwned,
+{
     item.verify()?;
-    assert_eq!(&item.meta()?, meta);
+    assert_eq!(&item.meta_with_extensions()?, meta);
     assert_eq!(item.content()?, content);
     Ok(())
 }
@@ -1661,6 +1669,69 @@ fn chunk_preupload_and_download() -> Result<()> {
         it_mgr.download_content(&mut item2)?;
         assert!(!item2.is_missing_content());
         verify_item(&item2, &item.meta()?, &item.content()?)?;
+    }
+
+    etebase.logout()
+}
+
+#[test]
+fn metadata_extensions() -> Result<()> {
+    #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+    struct Custom {
+        custom_attr: String,
+    }
+
+    let etebase = init_test(&USER)?;
+    let col_mgr = etebase.collection_manager()?;
+
+    let ext = Custom {
+        custom_attr: "foobar".to_string(),
+    };
+    let col_meta = ItemMetadata::new_with_extensions(ext)
+        .set_name(Some("Collection"))
+        .set_description(Some("Mine"))
+        .set_color(Some("#aabbcc"))
+        .clone();
+    let col_content = b"SomeContent";
+
+    let col = col_mgr.create("some.coltype", &col_meta, col_content)?;
+    col_mgr.upload(&col, None)?;
+
+    {
+        let collections = col_mgr.list("some.coltype", None)?;
+        assert_eq!(collections.data().len(), 1);
+        let col = collections.data().first().unwrap();
+
+        // The metadata is unchanged
+        verify_collection(col, &col_meta, col_content)?;
+        // Decoding the metadata as extensionless should still match
+        verify_collection(col, &col_meta.clone().without_extensions(), col_content)?;
+
+        // Setting the extension type to HashMap should give us all the custom attributes
+        let mut leftover = HashMap::new();
+        leftover.insert("custom_attr".to_string(), "foobar".to_string());
+        let catchall_meta = col_meta.with_extensions(leftover);
+        verify_collection(col, &catchall_meta, col_content)?;
+    }
+
+    let it_mgr = col_mgr.item_manager(&col)?;
+
+    let item_meta = ItemMetadata::new().set_name(Some("Item")).clone();
+    let item_content = b"SomeItemContent";
+    let item = it_mgr.create(&item_meta, item_content)?;
+    it_mgr.batch([item].iter(), None)?;
+
+    {
+        let items = it_mgr.list(None)?;
+        assert_eq!(items.data().len(), 1);
+        let item = items.data().first().unwrap();
+
+        verify_item(item, &item_meta, item_content)?;
+
+        // Setting the extension type to an empty HashMap should be equivalent
+        let empty: HashMap<String, String> = HashMap::new();
+        let catchall_meta = item_meta.with_extensions(empty);
+        verify_item(item, &catchall_meta, item_content)?;
     }
 
     etebase.logout()
