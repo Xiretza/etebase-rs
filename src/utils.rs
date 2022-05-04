@@ -231,7 +231,9 @@ pub fn get_padding(length: u32) -> u32 {
     }
 
     let e = f64::from(length).log2().floor();
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let s = (e.log2().floor() as u32) + 1;
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let last_bits = (e as u32) - s;
     let bit_mask = (1 << last_bits) - 1;
 
