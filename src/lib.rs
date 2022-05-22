@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
+#![forbid(unsafe_code)]
 #![warn(clippy::all)]
 #![allow(clippy::unnecessary_wraps)]
 #![warn(clippy::inconsistent_struct_constructor)]
