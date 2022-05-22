@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+### Features
+* Added `utils::randombytes_array()` function to create fixed-sized arrays of random numbers
+
 ### Fixes
 * Loosened the argument types for `ItemMetadata::set_*()` methods to allow passing `String`s directly
 * Loosened the argument types for several methods to take any `IntoIterator`, not just `Iterator`
@@ -10,6 +13,9 @@
 * Renamed `SignedInvitation::from_*()` methods to `sender_*()` to avoid confusing them with constructors.
 * Renamed the `Account::is_etebase_server()` function to a method - `Client::is_server_valid()`.
 * `Error` now implements `Eq`.
+* Previously, signing up a new user would generate a 32-byte salt, then hash the password using only the first 16 bytes.
+  Now, only 16 bytes of salt are generated for new signups.
+* Signing up a new user using a main key instead of a password no longer generates and stores an (unused) password hash.
 
 ## Version 0.5.3
 * Upgrade dependencies - ignore package lock. Upgrade to absolute latest.
