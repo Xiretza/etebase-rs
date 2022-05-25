@@ -13,8 +13,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// A generic error
-    Generic(String),
     /// An error with parsing the a URL (e.g. from the server URL)
     UrlParse(String),
     /// An error related to msgpack serialization and de-serialization
@@ -50,7 +48,6 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #[allow(clippy::match_same_arms)] // same order as in type declaration
         match self {
-            Error::Generic(s) => s.fmt(f),
             Error::UrlParse(s) => s.fmt(f),
             Error::MsgPack(s) => s.fmt(f),
             Error::ProgrammingError(s) => s.fmt(f),
@@ -84,21 +81,9 @@ impl StdError for Error {
     }
 }
 
-impl From<String> for Error {
-    fn from(err: String) -> Error {
-        Error::Generic(err)
-    }
-}
-
 impl From<url::ParseError> for Error {
     fn from(err: url::ParseError) -> Error {
         Error::UrlParse(err.to_string())
-    }
-}
-
-impl From<std::ffi::NulError> for Error {
-    fn from(err: std::ffi::NulError) -> Error {
-        Error::Generic(err.to_string())
     }
 }
 
