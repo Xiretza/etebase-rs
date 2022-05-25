@@ -16,8 +16,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// An error with parsing the a URL (e.g. from the server URL)
     UrlParse(String),
-    /// An error related to msgpack serialization and de-serialization
-    MsgPack(String),
+
+    /// An error related to msgpack serialization
+    MsgPackEncode(#[from] rmp_serde::encode::Error),
+    /// An error related to msgpack deserialization
+    MsgPackDecode(#[from] rmp_serde::decode::Error),
+
     /// A programming error that indicates the developers are using the API wrong
     ProgrammingError(&'static str),
     /// An attempt to fetch the content of an item that doesn't have the content yet
@@ -50,7 +54,8 @@ impl fmt::Display for Error {
         #[allow(clippy::match_same_arms)] // same order as in type declaration
         match self {
             Error::UrlParse(s) => s.fmt(f),
-            Error::MsgPack(s) => s.fmt(f),
+            Error::MsgPackEncode(s) => s.fmt(f),
+            Error::MsgPackDecode(s) => s.fmt(f),
             Error::ProgrammingError(s) => s.fmt(f),
             Error::MissingContent(s) => s.fmt(f),
             Error::Padding(s) => s.fmt(f),
@@ -82,17 +87,5 @@ impl From<url::ParseError> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::UrlParse(err.to_string())
-    }
-}
-
-impl From<rmp_serde::encode::Error> for Error {
-    fn from(err: rmp_serde::encode::Error) -> Error {
-        Error::MsgPack(err.to_string())
-    }
-}
-
-impl From<rmp_serde::decode::Error> for Error {
-    fn from(err: rmp_serde::decode::Error) -> Error {
-        Error::MsgPack(err.to_string())
     }
 }
