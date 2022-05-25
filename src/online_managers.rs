@@ -36,9 +36,7 @@ pub fn test_reset(
     let body = rmp_serde::to_vec_named(&body_struct)?;
     let url = client.api_base.join("api/v1/test/authentication/reset/")?;
 
-    let res = client.post(url.as_str(), body)?;
-
-    res.error_for_status()?;
+    client.post(url.as_str(), body)?.check_status()?;
 
     Ok(())
 }
@@ -299,7 +297,7 @@ impl<'a> Authenticator<'a> {
         if res.status == 404 {
             return Ok(false);
         }
-        res.error_for_status()?;
+        res.check_status()?;
 
         Ok(true)
     }
@@ -315,8 +313,7 @@ impl<'a> Authenticator<'a> {
 
         let url = self.api_base.join("login_challenge/")?;
         let ret = self.client.post(url.as_str(), body)?;
-        ret.error_for_status()?;
-        let ret = rmp_serde::from_slice(ret.bytes())?;
+        let ret = rmp_serde::from_slice(ret.body()?)?;
 
         Ok(ret)
     }
@@ -340,8 +337,7 @@ impl<'a> Authenticator<'a> {
 
         let url = self.api_base.join("signup/")?;
         let ret = self.client.post(url.as_str(), body)?;
-        ret.error_for_status()?;
-        let ret = rmp_serde::from_slice(ret.bytes())?;
+        let ret = rmp_serde::from_slice(ret.body()?)?;
 
         Ok(ret)
     }
@@ -355,16 +351,15 @@ impl<'a> Authenticator<'a> {
 
         let url = self.api_base.join("login/")?;
         let ret = self.client.post(url.as_str(), body)?;
-        ret.error_for_status()?;
-        let ret = rmp_serde::from_slice(ret.bytes())?;
+        let ret = rmp_serde::from_slice(ret.body()?)?;
 
         Ok(ret)
     }
 
     pub fn logout(&self) -> Result<()> {
         let url = self.api_base.join("logout/")?;
-        let res = self.client.post(url.as_str(), vec![])?;
-        res.error_for_status()?;
+
+        self.client.post(url.as_str(), vec![])?.check_status()?;
 
         Ok(())
     }
@@ -377,8 +372,8 @@ impl<'a> Authenticator<'a> {
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
         let url = self.api_base.join("change_password/")?;
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
+
+        self.client.post(url.as_str(), body)?.check_status()?;
 
         Ok(())
     }
@@ -391,8 +386,7 @@ impl<'a> Authenticator<'a> {
 
         let url = self.api_base.join("dashboard_url/")?;
         let ret = self.client.post(url.as_str(), vec![])?;
-        ret.error_for_status()?;
-        let ret: Ret = rmp_serde::from_slice(ret.bytes())?;
+        let ret: Ret = rmp_serde::from_slice(ret.body()?)?;
 
         Ok(ret.url)
     }
@@ -513,8 +507,7 @@ impl CollectionManagerOnline {
     ) -> Result<EncryptedCollection> {
         let url = apply_fetch_options(self.api_base.join(&format!("{}/", col_uid))?, options);
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: EncryptedCollection = rmp_serde::from_slice(res)?;
         serialized.mark_saved();
@@ -545,8 +538,7 @@ impl CollectionManagerOnline {
         };
 
         let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: CollectionListResponse<EncryptedCollection> = rmp_serde::from_slice(res)?;
         serialized
@@ -565,8 +557,7 @@ impl CollectionManagerOnline {
         let url = apply_fetch_options(self.api_base.clone(), options);
         let body = rmp_serde::to_vec_named(&collection)?;
 
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
+        self.client.post(url.as_str(), body)?.check_status()?;
 
         collection.mark_saved();
 
@@ -606,8 +597,7 @@ impl ItemManagerOnline {
     pub fn fetch(&self, item_uid: &str, options: Option<&FetchOptions>) -> Result<EncryptedItem> {
         let url = apply_fetch_options(self.api_base.join(&format!("{}/", item_uid))?, options);
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: EncryptedItem = rmp_serde::from_slice(res)?;
         serialized.mark_saved();
@@ -618,8 +608,7 @@ impl ItemManagerOnline {
     pub fn list(&self, options: Option<&FetchOptions>) -> Result<ItemListResponse<EncryptedItem>> {
         let url = apply_fetch_options(self.api_base.clone(), options);
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_slice(res)?;
         serialized.data.iter().for_each(EncryptedItem::mark_saved);
@@ -637,8 +626,7 @@ impl ItemManagerOnline {
             options,
         );
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let response: IteratorListResponse<EncryptedRevision> = rmp_serde::from_slice(res)?;
 
@@ -674,8 +662,7 @@ impl ItemManagerOnline {
         let body = rmp_serde::to_vec_named(&items)?;
         let url = apply_fetch_options(self.api_base.join("fetch_updates/")?, options);
         let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_slice(res)?;
         serialized.data.iter().for_each(EncryptedItem::mark_saved);
@@ -698,8 +685,7 @@ impl ItemManagerOnline {
         let body = rmp_serde::to_vec_named(&items)?;
         let url = apply_fetch_options(self.api_base.join("fetch_updates/")?, options);
         let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_slice(res)?;
         serialized.data.iter().for_each(EncryptedItem::mark_saved);
@@ -728,8 +714,7 @@ impl ItemManagerOnline {
         };
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
+        self.client.post(url.as_str(), body)?.check_status()?;
 
         for item in items {
             item.mark_saved();
@@ -764,8 +749,7 @@ impl ItemManagerOnline {
         };
         let body = rmp_serde::to_vec_named(&body_struct)?;
 
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
+        self.client.post(url.as_str(), body)?.check_status()?;
 
         for item in items {
             item.mark_saved();
@@ -792,8 +776,9 @@ impl ItemManagerOnline {
             options,
         );
         // FIXME: We are copying the vec here, we shouldn't! Fix the client.
-        let res = self.client.put(url.as_str(), chunk_content.clone())?;
-        res.error_for_status()?;
+        self.client
+            .put(url.as_str(), chunk_content.clone())?
+            .check_status()?;
 
         Ok(())
     }
@@ -810,9 +795,8 @@ impl ItemManagerOnline {
             options,
         );
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
 
-        Ok(res.bytes().to_vec())
+        Ok(res.body()?.to_vec())
     }
 }
 
@@ -859,8 +843,7 @@ impl CollectionInvitationManagerOnline {
     ) -> Result<IteratorListResponse<SignedInvitation>> {
         let url = apply_fetch_options(self.api_base.join("incoming/")?, options);
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: IteratorListResponse<SignedInvitation> = rmp_serde::from_slice(res)?;
 
@@ -873,8 +856,7 @@ impl CollectionInvitationManagerOnline {
     ) -> Result<IteratorListResponse<SignedInvitation>> {
         let url = apply_fetch_options(self.api_base.join("outgoing/")?, options);
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: IteratorListResponse<SignedInvitation> = rmp_serde::from_slice(res)?;
 
@@ -907,8 +889,7 @@ impl CollectionInvitationManagerOnline {
             })?
         };
 
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
+        self.client.post(url.as_str(), body)?.check_status()?;
 
         Ok(())
     }
@@ -918,8 +899,7 @@ impl CollectionInvitationManagerOnline {
             .api_base
             .join(&format!("incoming/{}/", invitation.uid()))?;
 
-        let res = self.client.delete(url.as_str())?;
-        res.error_for_status()?;
+        self.client.delete(url.as_str())?.check_status()?;
 
         Ok(())
     }
@@ -932,8 +912,7 @@ impl CollectionInvitationManagerOnline {
         }
 
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: UserProfile = rmp_serde::from_slice(res)?;
 
@@ -945,8 +924,7 @@ impl CollectionInvitationManagerOnline {
 
         let body = rmp_serde::to_vec_named(&invitation)?;
 
-        let res = self.client.post(url.as_str(), body)?;
-        res.error_for_status()?;
+        self.client.post(url.as_str(), body)?.check_status()?;
 
         Ok(())
     }
@@ -956,8 +934,7 @@ impl CollectionInvitationManagerOnline {
             .api_base
             .join(&format!("outgoing/{}/", invitation.uid()))?;
 
-        let res = self.client.delete(url.as_str())?;
-        res.error_for_status()?;
+        self.client.delete(url.as_str())?.check_status()?;
 
         Ok(())
     }
@@ -985,8 +962,7 @@ impl CollectionMemberManagerOnline {
     ) -> Result<IteratorListResponse<CollectionMember>> {
         let url = apply_fetch_options(self.api_base.clone(), options);
         let res = self.client.get(url.as_str())?;
-        res.error_for_status()?;
-        let res = res.bytes();
+        let res = res.body()?;
 
         let serialized: IteratorListResponse<CollectionMember> = rmp_serde::from_slice(res)?;
 
@@ -996,8 +972,7 @@ impl CollectionMemberManagerOnline {
     pub fn remove(&self, username: &str) -> Result<()> {
         let url = self.api_base.join(&format!("{}/", username))?;
 
-        let res = self.client.delete(url.as_str())?;
-        res.error_for_status()?;
+        self.client.delete(url.as_str())?.check_status()?;
 
         Ok(())
     }
@@ -1005,8 +980,7 @@ impl CollectionMemberManagerOnline {
     pub fn leave(&self) -> Result<()> {
         let url = self.api_base.join("leave/")?;
 
-        let res = self.client.post(url.as_str(), vec![])?;
-        res.error_for_status()?;
+        self.client.post(url.as_str(), vec![])?.check_status()?;
 
         Ok(())
     }
@@ -1028,8 +1002,7 @@ impl CollectionMemberManagerOnline {
             rmp_serde::to_vec_named(&Body { access_level })?
         };
 
-        let res = self.client.patch(url.as_str(), body)?;
-        res.error_for_status()?;
+        self.client.patch(url.as_str(), body)?.check_status()?;
 
         Ok(())
     }

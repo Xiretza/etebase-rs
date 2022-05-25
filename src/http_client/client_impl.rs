@@ -39,7 +39,7 @@ pub trait ClientImplementation {
 
 /// An network response as returned from [network clients](ClientImplementation)
 #[derive(Clone, PartialEq, Eq, Debug)]
-#[must_use = "The server may have responded with an error, which should be checked for using Response::error_for_status"]
+#[must_use = "The server may have responded with an error, which should be checked for using Response::check_status"]
 pub struct Response {
     pub status: u16,
     body: Vec<u8>,
@@ -51,14 +51,30 @@ impl Response {
         Response { status, body }
     }
 
-    /// Get the response body as bytes
+    /// Get the response body as bytes, without checking the HTTP status code. To verify the status
+    /// code, use [`body()`](Self::body).
     #[must_use]
-    pub fn bytes(&self) -> &[u8] {
+    pub fn body_unchecked(&self) -> &[u8] {
         &self.body
     }
 
-    /// Returns [`Ok`] for valid responses and an [`Error`] object on error
-    pub fn error_for_status(&self) -> Result<(), crate::error::Error> {
+    /// Checks the HTTP response status for success and returns the response body as bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Http`](crate::error::Error::Http) if the HTTP response code indicated an
+    /// error.
+    pub fn body(&self) -> Result<&[u8], crate::error::Error> {
+        self.check_status().map(|()| self.body.as_slice())
+    }
+
+    /// Checks the HTTP response status for success.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Http`](crate::error::Error::Http) if the HTTP response code indicated an
+    /// error.
+    pub fn check_status(&self) -> Result<(), crate::error::Error> {
         #[derive(Deserialize)]
         struct ErrorResponseInner {
             pub code: Option<String>,
