@@ -14,6 +14,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
+    /// An IO error
+    Io(#[from] std::io::Error),
+
     /// An error with parsing the a URL (e.g. from the server URL)
     UrlParse(#[from] url::ParseError),
 
@@ -53,6 +56,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #[allow(clippy::match_same_arms)] // same order as in type declaration
         match self {
+            Error::Io(s) => s.fmt(f),
             Error::UrlParse(s) => s.fmt(f),
             Error::MsgPackEncode(s) => s.fmt(f),
             Error::MsgPackDecode(s) => s.fmt(f),
@@ -75,11 +79,5 @@ impl fmt::Display for Error {
 impl From<Error> for String {
     fn from(err: Error) -> String {
         err.to_string()
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-        Error::UrlParse(err.to_string())
     }
 }
