@@ -15,7 +15,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[non_exhaustive]
 pub enum Error {
     /// An error with parsing the a URL (e.g. from the server URL)
-    UrlParse(String),
+    UrlParse(#[from] url::ParseError),
 
     /// An error related to msgpack serialization
     MsgPackEncode(#[from] rmp_serde::encode::Error),
@@ -75,12 +75,6 @@ impl fmt::Display for Error {
 impl From<Error> for String {
     fn from(err: Error) -> String {
         err.to_string()
-    }
-}
-
-impl From<url::ParseError> for Error {
-    fn from(err: url::ParseError) -> Error {
-        Error::UrlParse(err.to_string())
     }
 }
 
