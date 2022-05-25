@@ -17,7 +17,6 @@ pub trait ClientImplementation {
 }
 
 /// An network response as returned from [network clients](ClientImplementation)
-#[derive(Clone)]
 pub struct Response {
     bytes: Vec<u8>,
     status: u16,

@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
-use std::error;
+use std::error::Error as StdError;
 use std::fmt;
 
 /// A short-hand version of a [`std::result::Result`] that always returns an Etebase [`Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// The error type returned from the Etebase API
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// A generic error
@@ -44,6 +44,9 @@ pub enum Error {
     ServerError(String),
     /// A generic error with the server request
     Http(String),
+
+    /// A network error from within the HTTP library
+    Network(Box<dyn StdError>),
 }
 
 impl fmt::Display for Error {
@@ -67,6 +70,8 @@ impl fmt::Display for Error {
             Error::TemporaryServerError(s) => s.fmt(f),
             Error::ServerError(s) => s.fmt(f),
             Error::Http(s) => s.fmt(f),
+
+            Error::Network(s) => s.fmt(f),
         }
     }
 }
@@ -77,9 +82,12 @@ impl From<Error> for String {
     }
 }
 
-impl error::Error for Error {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        None
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            Error::Network(e) => Some(&**e),
+            _ => None,
+        }
     }
 }
 
