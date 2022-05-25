@@ -91,7 +91,7 @@ fn is_etebase_server() -> Result<()> {
     let client = Client::new(CLIENT_NAME, &test_url)?;
     assert_err!(
         Account::login(client, USER2.username, USER2.password),
-        Error::NotFound(_)
+        Error::Http { status: 404, .. }
     );
 
     Ok(())
@@ -103,7 +103,7 @@ fn get_dashboard_url() -> Result<()> {
 
     match etebase.fetch_dashboard_url() {
         Ok(url) => assert!(!url.is_empty()),
-        err => assert_err!(err, Error::Http(_)),
+        err => assert_err!(err, Error::Http { .. }),
     };
 
     etebase.logout()

@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 use url::Url;
 
-use crate::online_managers::Authenticator;
+use crate::{error::Error, online_managers::Authenticator};
 
 use super::error::Result;
 
@@ -14,6 +14,35 @@ pub use client_impl::{ClientImplementation, Response};
 
 #[cfg(feature = "networking")]
 use reqwest_client::Client as ReqwestImpl;
+
+/// Information about an error returned by the server. This is generated for non-2xx HTTP status
+/// codes, and includes either an error code and an explanation, or the raw response body if it
+/// could not be decoded.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum ErrorResponse {
+    Error {
+        code: Option<String>,
+        detail: Option<String>,
+    },
+    Invalid {
+        body: Vec<u8>,
+    },
+}
+
+impl fmt::Display for ErrorResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorResponse::Error { code, detail } => match (code, detail) {
+                (Some(code), None) => write!(f, "error code {}", code),
+                (Some(code), Some(detail)) => write!(f, "error code {}: {}", code, detail),
+                (None, Some(detail)) => write!(f, "{}", detail),
+                (None, None) => write!(f, "no error details"),
+            },
+            ErrorResponse::Invalid { body } => write!(f, "invalid response body: {:?}", body),
+        }
+    }
+}
 
 /// The network client to use to interact with the Etebase server
 ///
@@ -155,30 +184,32 @@ impl Client {
     }
 
     pub(crate) fn get(&self, url: &str) -> Result<Response> {
-        self.imp.get(url, self.auth_token.as_deref()).into_result()
+        self.imp
+            .get(url, self.auth_token.as_deref())
+            .map_err(Error::Network)
     }
 
     pub(crate) fn post(&self, url: &str, body: Vec<u8>) -> Result<Response> {
         self.imp
             .post(url, self.auth_token.as_deref(), body)
-            .into_result()
+            .map_err(Error::Network)
     }
 
     pub(crate) fn put(&self, url: &str, body: Vec<u8>) -> Result<Response> {
         self.imp
             .put(url, self.auth_token.as_deref(), body)
-            .into_result()
+            .map_err(Error::Network)
     }
 
     pub(crate) fn patch(&self, url: &str, body: Vec<u8>) -> Result<Response> {
         self.imp
             .patch(url, self.auth_token.as_deref(), body)
-            .into_result()
+            .map_err(Error::Network)
     }
 
     pub(crate) fn delete(&self, url: &str) -> Result<Response> {
         self.imp
             .delete(url, self.auth_token.as_deref())
-            .into_result()
+            .map_err(Error::Network)
     }
 }

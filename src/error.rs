@@ -4,6 +4,8 @@
 use std::error::Error as StdError;
 use std::fmt;
 
+use crate::http_client::ErrorResponse;
+
 /// A short-hand version of a [`std::result::Result`] that always returns an Etebase [`Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -28,22 +30,17 @@ pub enum Error {
     /// An issue with the encryption
     Encryption(&'static str),
     /// An authorization issue from the server
-    Unauthorized(String),
+    Unauthorized(ErrorResponse),
     /// A conflict issue returned from the server, e.g. if a transaction failed
     Conflict(String),
     /// The operation was not allowed due to permissions
-    PermissionDenied(String),
-    /// The requested resource was not found
-    NotFound(String),
+    PermissionDenied(ErrorResponse),
 
-    /// There was an issue with the connection (e.g. DNS lookup)
-    Connection(String),
-    /// There was an temporary server error (e.g. maintenance, or gateway issues)
-    TemporaryServerError(String),
-    /// There was a server error when processing the request (usually a bug in the server)
-    ServerError(String),
     /// A generic error with the server request
-    Http(String),
+    Http {
+        status: u16,
+        response: ErrorResponse,
+    },
 
     /// A network error from within the HTTP library
     Network(Box<dyn StdError>),
@@ -62,14 +59,10 @@ impl fmt::Display for Error {
             Error::Base64(s) => s.fmt(f),
             Error::Encryption(s) => s.fmt(f),
             Error::PermissionDenied(s) => s.fmt(f),
-            Error::NotFound(s) => s.fmt(f),
             Error::Unauthorized(s) => s.fmt(f),
             Error::Conflict(s) => s.fmt(f),
 
-            Error::Connection(s) => s.fmt(f),
-            Error::TemporaryServerError(s) => s.fmt(f),
-            Error::ServerError(s) => s.fmt(f),
-            Error::Http(s) => s.fmt(f),
+            Error::Http { status, response } => write!(f, "HTTP status {}: {}", status, response),
 
             Error::Network(s) => s.fmt(f),
         }

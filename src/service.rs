@@ -7,7 +7,10 @@ use std::convert::TryInto;
 use std::iter;
 use std::sync::Arc;
 
-use crate::utils::{PRIVATE_KEY_SIZE, SALT_SIZE};
+use crate::{
+    http_client::ErrorResponse,
+    utils::{PRIVATE_KEY_SIZE, SALT_SIZE},
+};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -180,8 +183,9 @@ impl Account {
 
         let authenticator = Authenticator::new(&client);
         let login_challenge = match authenticator.get_login_challenge(username) {
-            Err(Error::Unauthorized(s)) if s == "User not properly init" => {
-                // FIXME: fragile, we should have a proper error value or actually use codes
+            Err(Error::Unauthorized(ErrorResponse::Error {
+                code: Some(code), ..
+            })) if code == "user_not_init" => {
                 let user = User::new(username, "init@localhost");
                 return Self::signup(client, &user, password);
             }
@@ -214,8 +218,9 @@ impl Account {
 
         let authenticator = Authenticator::new(&client);
         let login_challenge = match authenticator.get_login_challenge(username) {
-            Err(Error::Unauthorized(s)) if s == "User not properly init" => {
-                // FIXME: fragile, we should have a proper error value or actually use codes
+            Err(Error::Unauthorized(ErrorResponse::Error {
+                code: Some(code), ..
+            })) if code == "user_not_init" => {
                 let user = User::new(username, "init@localhost");
                 return Self::signup_key(client, &user, &main_key[..]);
             }
