@@ -3,14 +3,15 @@
 
 use std::error::Error as StdError;
 use std::fmt;
+use thiserror::Error;
 
 use crate::http_client::ErrorResponse;
 
-/// A short-hand version of a [`std::result::Result`] that always returns an Etebase [`Error`].
+/// A short-hand version of a [`std::result::Result`] that always returns an Etebase [`enum@Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// The error type returned from the Etebase API
-#[derive(Debug)]
+#[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
     /// An error with parsing the a URL (e.g. from the server URL)
@@ -41,7 +42,7 @@ pub enum Error {
     },
 
     /// A network error from within the HTTP library
-    Network(Box<dyn StdError>),
+    Network(#[source] Box<dyn StdError>),
 }
 
 impl fmt::Display for Error {
@@ -69,15 +70,6 @@ impl fmt::Display for Error {
 impl From<Error> for String {
     fn from(err: Error) -> String {
         err.to_string()
-    }
-}
-
-impl StdError for Error {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self {
-            Error::Network(e) => Some(&**e),
-            _ => None,
-        }
     }
 }
 
