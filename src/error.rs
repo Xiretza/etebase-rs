@@ -9,6 +9,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// The error type returned from the Etebase API
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Error {
     /// A generic error
     Generic(String),
