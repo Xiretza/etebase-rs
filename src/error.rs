@@ -50,9 +50,3 @@ pub enum Error {
     #[error("network error")]
     Network(#[source] Box<dyn StdError>),
 }
-
-impl From<Error> for String {
-    fn from(err: Error) -> String {
-        err.to_string()
-    }
-}
