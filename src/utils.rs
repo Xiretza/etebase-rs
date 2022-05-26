@@ -272,7 +272,7 @@ pub(crate) fn buffer_pad_fixed(buf: &[u8], blocksize: usize) -> Result<Vec<u8>> 
     let mut ret = vec![0; padding];
     ret[..len].copy_from_slice(buf);
 
-    pad(&mut ret[..], len, blocksize).map_err(|_| Error::Padding("Failed padding"))?;
+    pad(&mut ret[..], len, blocksize).map_err(|()| Error::Encryption("sodium_pad() failed"))?;
 
     Ok(ret)
 }
@@ -286,7 +286,7 @@ pub(crate) fn buffer_unpad_fixed(buf: &[u8], blocksize: usize) -> Result<Vec<u8>
     let mut buf = buf.to_vec();
 
     let new_len =
-        unpad(&buf[..], len, blocksize).map_err(|_| Error::Padding("Failed unpadding"))?;
+        unpad(&buf[..], len, blocksize).map_err(|()| Error::Encryption("sodium_unpad() failed"))?;
     buf.truncate(new_len);
     Ok(buf)
 }

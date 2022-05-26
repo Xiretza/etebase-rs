@@ -28,8 +28,6 @@ pub enum Error {
     ProgrammingError(&'static str),
     #[error("attempted to fetch content of an item that doesn't have the content yet: {0}")]
     MissingContent(&'static str),
-    #[error("issue with the padding of the encrypted content: {0}")]
-    Padding(&'static str),
     #[error("base64 encoding/decoding failed: {0}")]
     Base64(&'static str),
     #[error("encryption error: {0}")]
