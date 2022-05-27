@@ -57,6 +57,8 @@ pub enum Error {
 
     #[error("protocol error")]
     Protocol(#[from] ProtocolError),
+    #[error("failed to restore saved account data: {0}")]
+    Restore(&'static str),
 
     #[error("HTTP request failed: status {status}, {response}")]
     Http {

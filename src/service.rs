@@ -482,7 +482,7 @@ impl Account {
         let main_key = main_key
             .as_slice()
             .try_into()
-            .map_err(|_| Error::Encryption("Restored main key has wrong size"))?;
+            .map_err(|_| Error::Restore("restored main key has wrong size"))?;
 
         let main_crypto_manager = MainCryptoManager::new(&main_key, version)?;
         let content = main_crypto_manager
@@ -492,8 +492,8 @@ impl Account {
         // The content is the concatenation of the account key and the private key
         let account_key = content
             .get(..SYMMETRIC_KEY_SIZE)
-            .ok_or(Error::Encryption(
-                "Server's login response too short to contain account key",
+            .ok_or(Error::Restore(
+                "Stored key data too short to contain account key",
             ))?
             .try_into()
             .unwrap();
