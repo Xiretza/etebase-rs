@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use sodiumoxide::crypto::sign;
 
+use crate::error::ProtocolError;
+
 use super::{
     chunker::Rollsum,
     crypto::{BoxCryptoManager, CryptoMac, CryptoManager},
@@ -287,7 +289,7 @@ impl SignedInvitation {
             ))?
             .try_into()
             .map_err(|_| {
-                Error::Encryption("Received invitation encryption key has wrong length")
+                ProtocolError::InvalidEncryptionKey("invitation encryption key has wrong length")
             })?;
         identity_crypto_manager.decrypt(&self.signed_encryption_key, from_pubkey)
     }
@@ -546,7 +548,11 @@ impl EncryptedCollection {
             Self::collection_key_static(parent_crypto_manager, encryption_key, collection_type)?
                 .as_slice()
                 .try_into()
-                .map_err(|_| Error::Encryption("Collection encryption key has wrong length"))?;
+                .map_err(|_| {
+                    ProtocolError::InvalidEncryptionKey(
+                        "collection encryption key has wrong length",
+                    )
+                })?;
 
         CollectionCryptoManager::new(&encryption_key, version)
     }
@@ -632,7 +638,7 @@ impl EncryptedRevision {
         let mac = from_base64(&self.uid)?
             .as_slice()
             .try_into()
-            .map_err(|_| Error::Encryption("Collection MAC has wrong length"))?;
+            .map_err(|_| ProtocolError::InvalidCollectionMac("wrong length"))?;
         let ad_hash = self.calculate_hash(crypto_manager, additional_data)?;
 
         crypto_manager.0.verify(&self.meta, &mac, Some(&ad_hash))
@@ -663,7 +669,7 @@ impl EncryptedRevision {
         let mac = from_base64(&self.uid)?
             .as_slice()
             .try_into()
-            .map_err(|_| Error::Encryption("Collection MAC has wrong length"))?;
+            .map_err(|_| ProtocolError::InvalidCollectionMac("wrong length"))?;
         let ad_hash = self.calculate_hash(crypto_manager, additional_data)?;
 
         buffer_unpad(
@@ -779,7 +785,7 @@ impl EncryptedRevision {
             let calculated_mac = crypto_manager.0.calculate_mac(&buf)?;
 
             if !memcmp(&hash, &calculated_mac) {
-                return Err(Error::Encryption("Got a wrong mac for chunk"));
+                return Err(ProtocolError::WrongChunkMac.into());
             }
 
             Ok(buf)

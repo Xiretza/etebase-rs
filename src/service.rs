@@ -8,6 +8,7 @@ use std::iter;
 use std::sync::Arc;
 
 use crate::{
+    error::ProtocolError,
     http_client::ErrorResponse,
     utils::{PRIVATE_KEY_SIZE, SALT_SIZE},
 };
@@ -197,9 +198,7 @@ impl Account {
         let salt = login_challenge
             .salt
             .get(..SALT_SIZE)
-            .ok_or(Error::Encryption(
-                "Salt obtained from login challenge too short: expected at least 16 bytes",
-            ))?
+            .ok_or(ProtocolError::SaltTooShort(login_challenge.salt.len()))?
             .try_into()
             .unwrap();
         let main_key = derive_key(&salt, password)?;
@@ -267,9 +266,7 @@ impl Account {
         // The content is the concatenation of the account key and the private key
         let account_key = content
             .get(..SYMMETRIC_KEY_SIZE)
-            .ok_or(Error::Encryption(
-                "Server's login response too short to contain account key",
-            ))?
+            .ok_or(ProtocolError::LoginResponseTooShort)?
             .try_into()
             .unwrap();
         let account_crypto_manager = main_crypto_manager.account_crypto_manager(account_key)?;
@@ -542,9 +539,7 @@ impl Account {
         // The content is the concatenation of the account key and the private key
         let privkey = content
             .get(SYMMETRIC_KEY_SIZE..(SYMMETRIC_KEY_SIZE + PRIVATE_KEY_SIZE))
-            .ok_or(Error::Encryption(
-                "Server's login response too short to contain private key",
-            ))?
+            .ok_or(ProtocolError::LoginResponseTooShort)?
             .try_into()
             .unwrap();
         Ok(main_crypto_manager.identity_crypto_manager(privkey))

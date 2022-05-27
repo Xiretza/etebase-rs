@@ -9,6 +9,22 @@ use crate::http_client::ErrorResponse;
 /// A short-hand version of a [`std::result::Result`] that always returns an Etebase [`enum@Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug, Error)]
+#[non_exhaustive]
+#[allow(clippy::module_name_repetitions)]
+pub enum ProtocolError {
+    #[error("invalid encryption key: {0}")]
+    InvalidEncryptionKey(&'static str),
+    #[error("invalid collection MAC: {0}")]
+    InvalidCollectionMac(&'static str),
+    #[error("wrong chunk MAC")]
+    WrongChunkMac,
+    #[error("received password salt too short - expected at least 16 bytes, got {0}")]
+    SaltTooShort(usize),
+    #[error("server's login response too short")]
+    LoginResponseTooShort,
+}
+
 /// The error type returned from the Etebase API
 #[derive(Debug, Error)]
 #[non_exhaustive]
@@ -38,6 +54,9 @@ pub enum Error {
     Conflict(String),
     #[error("permission denied: {0}")]
     PermissionDenied(ErrorResponse),
+
+    #[error("protocol error")]
+    Protocol(#[from] ProtocolError),
 
     #[error("HTTP request failed: status {status}, {response}")]
     Http {
