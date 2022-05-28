@@ -7,7 +7,10 @@ use std::convert::TryInto;
 use std::iter;
 use std::sync::Arc;
 
-use crate::utils::{PRIVATE_KEY_SIZE, SALT_SIZE};
+use crate::{
+    crypto::EncryptedData,
+    utils::{PRIVATE_KEY_SIZE, SALT_SIZE},
+};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -69,8 +72,7 @@ impl StorageCryptoManager {
 #[serde(rename_all = "camelCase")]
 struct AccountData<'a> {
     pub version: u8,
-    #[serde(with = "serde_bytes")]
-    pub key: &'a [u8],
+    pub key: EncryptedData,
     pub user: LoginResponseUser,
     pub server_url: &'a str,
     pub auth_token: Option<&'a str>,
@@ -78,10 +80,9 @@ struct AccountData<'a> {
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct AccountDataStored<'a> {
+struct AccountDataStored {
     pub version: u8,
-    #[serde(with = "serde_bytes")]
-    pub encrypted_data: &'a [u8],
+    pub encrypted_data: EncryptedData,
 }
 
 /// The main object for all user interactions and data manipulation, representing an authenticated
@@ -156,7 +157,7 @@ impl Account {
             salt,
             login_crypto_manager.pubkey(),
             identity_crypto_manager.pubkey(),
-            &encrypted_content,
+            encrypted_content,
         )?;
 
         client.set_token(Some(&login_response.token));
@@ -358,7 +359,7 @@ impl Account {
         let response = {
             #[derive(Serialize)]
             #[serde(rename_all = "camelCase")]
-            pub struct Body<'a> {
+            struct Body<'a> {
                 pub username: &'a str,
                 #[serde(with = "serde_bytes")]
                 pub challenge: &'a [u8],
@@ -367,8 +368,7 @@ impl Account {
 
                 #[serde(with = "serde_bytes")]
                 pub login_pubkey: &'a [u8],
-                #[serde(with = "serde_bytes")]
-                pub encrypted_content: &'a [u8],
+                pub encrypted_content: &'a EncryptedData,
             }
 
             rmp_serde::to_vec_named(&Body {
@@ -427,7 +427,7 @@ impl Account {
         let account_data = AccountData {
             user: self.user.clone(),
             version,
-            key: &crypto_manager.0.encrypt(&self.main_key, None),
+            key: crypto_manager.0.encrypt(&self.main_key, None),
             auth_token: self.client.token(),
             server_url: self.client.server_url().as_str(),
         };
@@ -435,7 +435,7 @@ impl Account {
 
         let ret = AccountDataStored {
             version,
-            encrypted_data: &crypto_manager.0.encrypt(&serialized, Some(&[version])),
+            encrypted_data: crypto_manager.0.encrypt(&serialized, Some(&[version])),
         };
         let serialized = rmp_serde::to_vec_named(&ret)?;
 
@@ -470,13 +470,13 @@ impl Account {
         let crypto_manager = StorageCryptoManager::new(encryption_key, version)?;
         let decrypted = crypto_manager
             .0
-            .decrypt(account_data_stored.encrypted_data, Some(&[version]))?;
+            .decrypt(&account_data_stored.encrypted_data, Some(&[version]))?;
         let account_data: AccountData = rmp_serde::from_slice(&decrypted)?;
 
         client.set_token(account_data.auth_token);
         client.set_server_url(account_data.server_url)?;
 
-        let main_key = crypto_manager.0.decrypt(account_data.key, None)?;
+        let main_key = crypto_manager.0.decrypt(&account_data.key, None)?;
         let main_key = main_key
             .as_slice()
             .try_into()
@@ -1168,12 +1168,15 @@ impl CollectionInvitationManager {
         let collection_type_uid = self
             .account_crypto_manager
             .collection_type_to_uid(&content.collection_type)?;
-        let encryption_key = &self
-            .account_crypto_manager
-            .0
-            .encrypt(&content.encryption_key, Some(&collection_type_uid));
-        self.invitation_manager_online
-            .accept(invitation, &collection_type_uid, encryption_key)
+        let encryption_key = &self.account_crypto_manager.0.encrypt(
+            &content.encryption_key,
+            Some(collection_type_uid.concatenated_data()),
+        );
+        self.invitation_manager_online.accept(
+            invitation,
+            collection_type_uid.concatenated_data(),
+            encryption_key,
+        )
     }
 
     /// Reject an invitation

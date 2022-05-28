@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use sodiumoxide::crypto::sign;
 
+use crate::crypto::EncryptedData;
+
 use super::{
     chunker::Rollsum,
     crypto::{BoxCryptoManager, CryptoMac, CryptoManager},
@@ -45,14 +47,14 @@ impl AccountCryptoManager {
         Ok(Self(CryptoManager::new(key, *context, version)?))
     }
 
-    pub fn collection_type_to_uid(&self, collection_type: &str) -> Result<Vec<u8>> {
+    pub fn collection_type_to_uid(&self, collection_type: &str) -> Result<EncryptedData> {
         self.0.deterministic_encrypt(
             &buffer_pad_fixed(collection_type.as_bytes(), Self::COLTYPE_PAD_SIZE)?,
             None,
         )
     }
 
-    pub fn collection_type_from_uid(&self, collection_type_uid: &[u8]) -> Result<String> {
+    pub fn collection_type_from_uid(&self, collection_type_uid: &EncryptedData) -> Result<String> {
         buffer_unpad_fixed(
             &self.0.deterministic_decrypt(collection_type_uid, None)?,
             Self::COLTYPE_PAD_SIZE,
@@ -214,8 +216,7 @@ pub struct SignedInvitation {
     collection: String,
     access_level: CollectionAccessLevel,
 
-    #[serde(with = "serde_bytes")]
-    signed_encryption_key: Vec<u8>,
+    signed_encryption_key: EncryptedData,
 
     from_username: Option<String>,
 
@@ -311,11 +312,9 @@ pub(crate) struct EncryptedCollection {
     // Order matters because that's how we save to cache
     item: EncryptedItem,
     access_level: CollectionAccessLevel,
-    #[serde(with = "serde_bytes")]
-    collection_key: Vec<u8>,
+    collection_key: EncryptedData,
     // FIXME: remove the option "collection-type-migration" is done
-    #[serde(with = "serde_bytes")]
-    collection_type: Option<Vec<u8>>,
+    collection_type: Option<EncryptedData>,
     stoken: Option<String>,
 }
 
@@ -328,9 +327,10 @@ impl EncryptedCollection {
     ) -> Result<Self> {
         let version = CURRENT_VERSION;
         let collection_type = parent_crypto_manager.collection_type_to_uid(collection_type)?;
-        let collection_key = parent_crypto_manager
-            .0
-            .encrypt(&randombytes(SYMMETRIC_KEY_SIZE), Some(&collection_type));
+        let collection_key = parent_crypto_manager.0.encrypt(
+            &randombytes(SYMMETRIC_KEY_SIZE),
+            Some(collection_type.concatenated_data()),
+        );
         let crypto_manager = Self::crypto_manager_static(
             parent_crypto_manager,
             version,
@@ -362,8 +362,7 @@ impl EncryptedCollection {
                 struct EncryptedCollectionLegacy {
                     item: EncryptedItem,
                     access_level: CollectionAccessLevel,
-                    #[serde(with = "serde_bytes")]
-                    collection_key: Vec<u8>,
+                    collection_key: EncryptedData,
                     stoken: Option<String>,
                 }
 
@@ -520,27 +519,28 @@ impl EncryptedCollection {
 
     fn collection_key_static(
         account_crypto_manager: &AccountCryptoManager,
-        encryption_key: &[u8],
-        collection_type: Option<&[u8]>,
+        encryption_key: &EncryptedData,
+        collection_type: Option<&EncryptedData>,
     ) -> Result<Vec<u8>> {
-        account_crypto_manager
-            .0
-            .decrypt(encryption_key, collection_type)
+        account_crypto_manager.0.decrypt(
+            encryption_key,
+            collection_type.map(EncryptedData::concatenated_data),
+        )
     }
 
     fn collection_key(&self, account_crypto_manager: &AccountCryptoManager) -> Result<Vec<u8>> {
         Self::collection_key_static(
             account_crypto_manager,
             &self.collection_key,
-            self.collection_type.as_deref(),
+            self.collection_type.as_ref(),
         )
     }
 
     fn crypto_manager_static(
         parent_crypto_manager: &AccountCryptoManager,
         version: u8,
-        encryption_key: &[u8],
-        collection_type: Option<&[u8]>,
+        encryption_key: &EncryptedData,
+        collection_type: Option<&EncryptedData>,
     ) -> Result<CollectionCryptoManager> {
         let encryption_key =
             Self::collection_key_static(parent_crypto_manager, encryption_key, collection_type)?
@@ -559,7 +559,7 @@ impl EncryptedCollection {
             parent_crypto_manager,
             self.item.version,
             &self.collection_key,
-            self.collection_type.as_deref(),
+            self.collection_type.as_ref(),
         )
     }
 }
@@ -567,16 +567,13 @@ impl EncryptedCollection {
 #[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct ChunkArrayItem(
     pub StringBase64,
-    #[serde(default)]
-    #[serde(with = "serde_bytes")]
-    pub Option<Vec<u8>>,
+    #[serde(default)] pub Option<EncryptedData>,
 );
 
 #[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct EncryptedRevision {
     uid: StringBase64,
-    #[serde(with = "serde_bytes")]
-    meta: Vec<u8>,
+    meta: EncryptedData,
     deleted: bool,
 
     chunks: Vec<ChunkArrayItem>,
@@ -591,7 +588,7 @@ impl EncryptedRevision {
     ) -> Result<Self> {
         let mut ret = Self {
             uid: "".to_owned(),
-            meta: vec![],
+            meta: EncryptedData::from_parts(&[0; 24], &[]),
             deleted: false,
 
             chunks: vec![],
@@ -681,7 +678,7 @@ impl EncryptedRevision {
     ) -> Result<()> {
         let meta = self.meta(crypto_manager, additional_data)?;
 
-        let mut chunks: Vec<ChunkArrayItem> = vec![];
+        let mut chunks: Vec<(StringBase64, Vec<u8>)> = vec![];
 
         let min_chunk = 1 << 14;
         let max_chunk = 1 << 16;
@@ -699,7 +696,7 @@ impl EncryptedRevision {
                 if offset >= min_chunk && ((offset >= max_chunk) || chunker.split(mask)) {
                     let buf = &content[chunk_start..pos];
                     let hash = to_base64(&crypto_manager.0.calculate_mac(buf)?)?;
-                    chunks.push(ChunkArrayItem(hash, Some(buf.to_vec())));
+                    chunks.push((hash, buf.to_vec()));
                     chunk_start = pos;
                 }
                 pos += 1;
@@ -709,7 +706,7 @@ impl EncryptedRevision {
         if chunk_start < content.len() {
             let buf = &content[chunk_start..];
             let hash = to_base64(&crypto_manager.0.calculate_mac(buf)?)?;
-            chunks.push(ChunkArrayItem(hash, Some(buf.to_vec())));
+            chunks.push((hash, buf.to_vec()));
         }
 
         // Shuffle the items and save the ordering if we have more than one
@@ -741,19 +738,14 @@ impl EncryptedRevision {
                 // We encode it in an array so we can extend it later on if needed
                 let buf = rmp_serde::to_vec_named(&(indices,))?;
                 let hash = to_base64(&crypto_manager.0.calculate_mac(&buf)?)?;
-                chunks.push(ChunkArrayItem(hash, Some(buf)));
+                chunks.push((hash, buf));
             }
         }
 
-        let encrypt_item = |item: ChunkArrayItem| -> Result<ChunkArrayItem> {
-            let hash = item.0;
-            let buf = item.1;
-            let ret = match buf {
-                Some(buf) => Some(crypto_manager.0.encrypt(&buffer_pad(&buf)?, None)),
-                None => None,
-            };
+        let encrypt_item = |(hash, buf): (String, Vec<u8>)| -> Result<ChunkArrayItem> {
+            let ret = crypto_manager.0.encrypt(&buffer_pad(buf.as_slice())?, None);
 
-            Ok(ChunkArrayItem(hash, ret))
+            Ok(ChunkArrayItem(hash, Some(ret)))
         };
 
         // Encrypt all of the chunks
@@ -834,8 +826,7 @@ pub(crate) struct EncryptedItem {
     uid: StringBase64,
     version: u8,
 
-    #[serde(with = "serde_bytes")]
-    encryption_key: Option<Vec<u8>>,
+    encryption_key: Option<EncryptedData>,
     content: EncryptedRevision,
 
     etag: RefCell<Option<String>>,
@@ -999,7 +990,7 @@ impl EncryptedItem {
         parent_crypto_manager: &CollectionCryptoManager,
         uid: &str,
         version: u8,
-        encryption_key: Option<&[u8]>,
+        encryption_key: Option<&EncryptedData>,
     ) -> Result<ItemCryptoManager> {
         let encryption_key = match encryption_key {
             Some(encryption_key) => parent_crypto_manager
@@ -1019,12 +1010,11 @@ impl EncryptedItem {
         &self,
         parent_crypto_manager: &CollectionCryptoManager,
     ) -> Result<ItemCryptoManager> {
-        let encryption_key = self.encryption_key.as_deref();
         Self::crypto_manager_static(
             parent_crypto_manager,
             &self.uid,
             self.version,
-            encryption_key,
+            self.encryption_key.as_ref(),
         )
     }
 

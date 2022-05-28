@@ -41,7 +41,7 @@ fn user_reset(user: &TestUser) -> Result<()> {
         &from_base64(user.salt)?,
         &from_base64(user.loginPubkey)?,
         &from_base64(user.pubkey)?,
-        &from_base64(user.encryptedContent)?,
+        from_base64(user.encryptedContent)?,
     )?;
 
     Ok(())

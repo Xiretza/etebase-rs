@@ -177,23 +177,23 @@ impl CryptoManager {
         })
     }
 
-    pub fn encrypt(&self, msg: &[u8], additional_data: Option<&[u8]>) -> Vec<u8> {
+    pub fn encrypt(&self, msg: &[u8], additional_data: Option<&[u8]>) -> EncryptedData {
         let key = aead::Key(self.cipher_key);
         let nonce = aead::gen_nonce();
         let encrypted = aead::seal(msg, additional_data, &nonce, &key);
-        let ret = [nonce.as_ref(), &encrypted].concat();
 
-        ret
+        EncryptedData::from_parts(&nonce.0, &encrypted)
     }
 
-    pub fn decrypt(&self, cipher: &[u8], additional_data: Option<&[u8]>) -> Result<Vec<u8>> {
+    pub fn decrypt(&self, data: &EncryptedData, additional_data: Option<&[u8]>) -> Result<Vec<u8>> {
         let key = aead::Key(self.cipher_key);
-        let nonce = &cipher[..aead::NONCEBYTES];
-        let nonce: &[u8; aead::NONCEBYTES] =
-            to_enc_error!(nonce.try_into(), "Got a nonce of a wrong size")?;
-        let cipher = &cipher[aead::NONCEBYTES..];
         Ok(to_enc_error!(
-            aead::open(cipher, additional_data, &aead::Nonce(*nonce), &key),
+            aead::open(
+                data.ciphertext(),
+                additional_data,
+                &aead::Nonce(*data.nonce()),
+                &key
+            ),
             "decryption failed"
         )?)
     }
@@ -202,62 +202,54 @@ impl CryptoManager {
         &self,
         msg: &[u8],
         additional_data: Option<&[u8]>,
-    ) -> (Vec<u8>, Vec<u8>) {
+    ) -> (Vec<u8>, EncryptedData) {
         let key = aead::Key(self.cipher_key);
         let nonce = aead::gen_nonce();
         let mut encrypted = msg.to_owned();
         let tag = aead::seal_detached(&mut encrypted[..], additional_data, &nonce, &key);
-        let ret = [nonce.as_ref(), &encrypted].concat();
+        let ret = EncryptedData::from_parts(&nonce.0, &encrypted);
 
         (tag[..].to_owned(), ret)
     }
 
     pub fn decrypt_detached(
         &self,
-        cipher: &[u8],
+        data: &EncryptedData,
         tag: &[u8; aead::TAGBYTES],
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>> {
         let key = aead::Key(self.cipher_key);
         let tag = aead::Tag(*tag);
-        let nonce = &cipher[..aead::NONCEBYTES];
-        let nonce: &[u8; aead::NONCEBYTES] =
-            to_enc_error!(nonce.try_into(), "Got a nonce of a wrong size")?;
-        let cipher = &cipher[aead::NONCEBYTES..];
-        let mut decrypted = cipher.to_owned();
+        let mut buf = data.ciphertext().to_owned();
         to_enc_error!(
             aead::open_detached(
-                &mut decrypted[..],
+                &mut buf[..],
                 additional_data,
                 &tag,
-                &aead::Nonce(*nonce),
+                &aead::Nonce(*data.nonce()),
                 &key
             ),
             "decryption failed"
         )?;
 
-        Ok(decrypted)
+        Ok(buf)
     }
 
     pub fn verify(
         &self,
-        cipher: &[u8],
+        data: &EncryptedData,
         tag: &[u8; aead::TAGBYTES],
         additional_data: Option<&[u8]>,
     ) -> Result<bool> {
         let key = aead::Key(self.cipher_key);
         let tag = aead::Tag(*tag);
-        let nonce = &cipher[..aead::NONCEBYTES];
-        let nonce: &[u8; aead::NONCEBYTES] =
-            to_enc_error!(nonce.try_into(), "Got a nonce of a wrong size")?;
-        let cipher = &cipher[aead::NONCEBYTES..];
-        let mut decrypted = cipher.to_owned();
+        let mut buf = data.ciphertext().to_owned();
         to_enc_error!(
             aead::open_detached(
-                &mut decrypted[..],
+                &mut buf[..],
                 additional_data,
                 &tag,
-                &aead::Nonce(*nonce),
+                &aead::Nonce(*data.nonce()),
                 &key
             ),
             "decryption failed"
@@ -270,30 +262,29 @@ impl CryptoManager {
         &self,
         msg: &[u8],
         additional_data: Option<&[u8]>,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<EncryptedData> {
         let key = aead::Key(self.deterministic_encryption_key);
         let mac = self.calculate_mac(msg)?;
-        let nonce = &mac[..aead::NONCEBYTES];
-        let nonce: &[u8; aead::NONCEBYTES] =
-            to_enc_error!(nonce.try_into(), "Got a nonce of a wrong size")?;
-        let encrypted = aead::seal(msg, additional_data, &aead::Nonce(*nonce), &key);
-        let ret = [nonce.as_ref(), &encrypted].concat();
+        let nonce = mac[..aead::NONCEBYTES].try_into().unwrap();
+        let encrypted = aead::seal(msg, additional_data, &aead::Nonce(nonce), &key);
+        let ret = EncryptedData::from_parts(&nonce, &encrypted);
 
         Ok(ret)
     }
 
     pub fn deterministic_decrypt(
         &self,
-        cipher: &[u8],
+        data: &EncryptedData,
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>> {
         let key = aead::Key(self.deterministic_encryption_key);
-        let nonce = &cipher[..aead::NONCEBYTES];
-        let nonce: &[u8; aead::NONCEBYTES] =
-            to_enc_error!(nonce.try_into(), "Got a nonce of a wrong size")?;
-        let cipher = &cipher[aead::NONCEBYTES..];
         Ok(to_enc_error!(
-            aead::open(cipher, additional_data, &aead::Nonce(*nonce), &key),
+            aead::open(
+                data.ciphertext(),
+                additional_data,
+                &aead::Nonce(*data.nonce()),
+                &key
+            ),
             "decryption failed"
         )?)
     }
@@ -363,25 +354,29 @@ impl BoxCryptoManager {
         BoxCryptoManager { pubkey, privkey }
     }
 
-    pub fn encrypt(&self, msg: &[u8], pubkey: &[u8; box_::PUBLICKEYBYTES]) -> Vec<u8> {
+    pub fn encrypt(&self, msg: &[u8], pubkey: &[u8; box_::PUBLICKEYBYTES]) -> EncryptedData {
         let pubkey = box_::PublicKey(*pubkey);
         let privkey = box_::SecretKey(self.privkey.0);
         let nonce = box_::gen_nonce();
         let encrypted = box_::seal(msg, &nonce, &pubkey, &privkey);
-        let ret = [nonce.as_ref(), &encrypted].concat();
 
-        ret
+        EncryptedData::from_parts(&nonce.0, &encrypted)
     }
 
-    pub fn decrypt(&self, cipher: &[u8], pubkey: &[u8; sign::PUBLICKEYBYTES]) -> Result<Vec<u8>> {
+    pub fn decrypt(
+        &self,
+        cipher: &EncryptedData,
+        pubkey: &[u8; sign::PUBLICKEYBYTES],
+    ) -> Result<Vec<u8>> {
         let pubkey = box_::PublicKey(*pubkey);
         let privkey = box_::SecretKey(self.privkey.0);
-        let nonce = &cipher[..box_::NONCEBYTES];
-        let nonce: &[u8; box_::NONCEBYTES] =
-            to_enc_error!(nonce.try_into(), "Got a nonce of a wrong size")?;
-        let cipher = &cipher[box_::NONCEBYTES..];
         Ok(to_enc_error!(
-            box_::open(cipher, &box_::Nonce(*nonce), &pubkey, &privkey),
+            box_::open(
+                cipher.ciphertext(),
+                &box_::Nonce(*cipher.nonce()),
+                &pubkey,
+                &privkey
+            ),
             "decryption failed"
         )?)
     }
@@ -589,7 +584,7 @@ mod tests {
         let cipher =
             box_crypto_manager.encrypt(msg, box_crypto_manager2.pubkey().try_into().unwrap());
         let decrypted = box_crypto_manager2
-            .decrypt(&cipher[..], box_crypto_manager.pubkey().try_into().unwrap())
+            .decrypt(&cipher, box_crypto_manager.pubkey().try_into().unwrap())
             .unwrap();
         assert_eq!(decrypted, msg);
     }
@@ -728,7 +723,7 @@ mod tests {
             let cipher = crypto_manager
                 .deterministic_encrypt(&input[..i], None)
                 .unwrap();
-            assert_eq!(from_base64(expected).unwrap(), cipher);
+            assert_eq!(from_base64(expected).unwrap(), cipher.concatenated_data());
         }
 
         Ok(())

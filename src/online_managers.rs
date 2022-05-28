@@ -3,11 +3,11 @@
 
 extern crate rmp_serde;
 
+use std::convert::TryInto;
 use std::sync::Arc;
 use url::Url;
 
 use serde::{Deserialize, Serialize};
-use serde_bytes::ByteBuf;
 
 use super::encrypted_models::{
     ChunkArrayItem, CollectionAccessLevel, EncryptedCollection, EncryptedItem, EncryptedRevision,
@@ -15,6 +15,7 @@ use super::encrypted_models::{
 };
 use super::error::{Error, Result};
 use super::http_client::Client;
+use crate::crypto::EncryptedData;
 use crate::utils::{StrBase64, StringBase64};
 
 /// Resets/reinitializes a given user account. Only used for integration tests, not part of public API.
@@ -24,14 +25,14 @@ pub fn test_reset(
     salt: &[u8],
     login_pubkey: &[u8],
     pubkey: &[u8],
-    encrypted_content: &[u8],
+    encrypted_content: Vec<u8>,
 ) -> Result<()> {
     let body_struct = SignupBody {
         user,
         salt,
         login_pubkey,
         pubkey,
-        encrypted_content,
+        encrypted_content: encrypted_content.try_into().unwrap(),
     };
     let body = rmp_serde::to_vec_named(&body_struct)?;
     let url = client.api_base.join("api/v1/test/authentication/reset/")?;
@@ -172,8 +173,7 @@ pub(crate) struct SignupBody<'a> {
     pub login_pubkey: &'a [u8],
     #[serde(with = "serde_bytes")]
     pub pubkey: &'a [u8],
-    #[serde(with = "serde_bytes")]
-    pub encrypted_content: &'a [u8],
+    pub encrypted_content: EncryptedData,
 }
 
 #[derive(Serialize)]
@@ -200,8 +200,7 @@ pub(crate) struct LoginResponseUser {
     pub email: String,
     #[serde(with = "serde_bytes")]
     pub pubkey: Vec<u8>,
-    #[serde(with = "serde_bytes")]
-    pub encrypted_content: Vec<u8>,
+    pub encrypted_content: EncryptedData,
 }
 
 #[derive(Deserialize)]
@@ -327,7 +326,7 @@ impl<'a> Authenticator<'a> {
         salt: &[u8],
         login_pubkey: &[u8],
         pubkey: &[u8],
-        encrypted_content: &[u8],
+        encrypted_content: EncryptedData,
     ) -> Result<LoginResponse> {
         let body_struct = SignupBody {
             user,
@@ -522,23 +521,18 @@ impl CollectionManagerOnline {
         Ok(serialized)
     }
 
-    pub fn list_multi<I>(
+    pub fn list_multi(
         &self,
-        collection_types: I,
+        collection_types: Vec<EncryptedData>,
         options: Option<&FetchOptions>,
-    ) -> Result<CollectionListResponse<EncryptedCollection>>
-    where
-        I: IntoIterator<Item = Vec<u8>>,
-    {
+    ) -> Result<CollectionListResponse<EncryptedCollection>> {
         let url = apply_fetch_options(self.api_base.join("list_multi/")?, options);
-
-        let collection_types = collection_types.into_iter().map(ByteBuf::from).collect();
 
         let body = {
             #[derive(Serialize)]
             #[serde(rename_all = "camelCase")]
             struct Body {
-                collection_types: Vec<ByteBuf>,
+                collection_types: Vec<EncryptedData>,
             }
 
             rmp_serde::to_vec_named(&Body { collection_types })?
@@ -792,7 +786,9 @@ impl ItemManagerOnline {
             options,
         );
         // FIXME: We are copying the vec here, we shouldn't! Fix the client.
-        let res = self.client.put(url.as_str(), chunk_content.clone())?;
+        let res = self
+            .client
+            .put(url.as_str(), chunk_content.concatenated_data().to_vec())?;
         res.error_for_status()?;
 
         Ok(())
@@ -803,7 +799,7 @@ impl ItemManagerOnline {
         item_uid: &str,
         chunk_uid: &str,
         options: Option<&FetchOptions>,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<EncryptedData> {
         let url = apply_fetch_options(
             self.api_base
                 .join(&format!("{}/chunk/{}/download/", item_uid, chunk_uid))?,
@@ -812,7 +808,10 @@ impl ItemManagerOnline {
         let res = self.client.get(url.as_str())?;
         res.error_for_status()?;
 
-        Ok(res.bytes().to_vec())
+        res.bytes()
+            .to_vec()
+            .try_into()
+            .map_err(|_| Error::Encryption("Received chunk data too short"))
     }
 }
 
@@ -885,7 +884,7 @@ impl CollectionInvitationManagerOnline {
         &self,
         invitation: &SignedInvitation,
         collection_type: &[u8],
-        encryption_key: &[u8],
+        encryption_key: &EncryptedData,
     ) -> Result<()> {
         let url = self
             .api_base
@@ -895,8 +894,7 @@ impl CollectionInvitationManagerOnline {
             #[derive(Serialize)]
             #[serde(rename_all = "camelCase")]
             struct Body<'a> {
-                #[serde(with = "serde_bytes")]
-                encryption_key: &'a [u8],
+                encryption_key: &'a EncryptedData,
                 #[serde(with = "serde_bytes")]
                 collection_type: &'a [u8],
             }
