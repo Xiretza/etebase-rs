@@ -138,9 +138,9 @@ pub fn memcmp(x: &[u8], y: &[u8]) -> bool {
 /// let data = "SGVsbG8_IFdvcmxkIQ";
 /// let decoded = from_base64(data);
 ///
-/// assert_eq!(Ok(b"Hello? World!".to_vec()), decoded);
+/// assert_eq!(b"Hello? World!".to_vec(), decoded.unwrap());
 ///
-/// assert_eq!(Ok(b"".to_vec()), from_base64(""));
+/// assert_eq!(b"".to_vec(), from_base64("").unwrap());
 /// ```
 pub fn from_base64(string: &StrBase64) -> Result<Vec<u8>> {
     match base64::decode(string, base64::Variant::UrlSafeNoPadding) {
@@ -159,9 +159,9 @@ pub fn from_base64(string: &StrBase64) -> Result<Vec<u8>> {
 /// let data = b"Hello? World!";
 /// let encoded = to_base64(data);
 ///
-/// assert_eq!(Ok("SGVsbG8_IFdvcmxkIQ"), encoded.as_deref());
+/// assert_eq!("SGVsbG8_IFdvcmxkIQ", encoded.unwrap());
 ///
-/// assert_eq!(Ok(""), to_base64(b"").as_deref());
+/// assert_eq!("", to_base64(b"").unwrap());
 /// ```
 pub fn to_base64(bytes: &[u8]) -> Result<StringBase64> {
     Ok(base64::encode(bytes, base64::Variant::UrlSafeNoPadding))
