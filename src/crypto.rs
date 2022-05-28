@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: © 2020 Etebase Authors
 // SPDX-License-Identifier: LGPL-2.1-only
 
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
+use serde::{de::Error as _, Deserialize, Serialize};
+use serde_bytes::ByteBuf;
 use sodiumoxide::crypto::{
     aead::xchacha20poly1305_ietf as aead, box_, generichash, kdf, pwhash::argon2id13, scalarmult,
     sign,
@@ -51,6 +53,78 @@ pub(crate) fn derive_key(
     .map_err(|_| Error::Encryption("pwhash failed"))?;
 
     Ok(key)
+}
+
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+#[repr(transparent)]
+#[serde(transparent)]
+/// Represents a ciphertext appended to a public nonce.
+pub(crate) struct EncryptedData {
+    #[serde(with = "serde_bytes")]
+    inner: Vec<u8>,
+}
+
+impl EncryptedData {
+    const NONCE_LEN: usize = 24;
+
+    /// Creates an `EncryptedData` object from a nonce and the ciphertext.
+    #[must_use]
+    pub fn from_parts(nonce: &[u8; Self::NONCE_LEN], ciphertext: &[u8]) -> Self {
+        Self {
+            inner: [nonce, ciphertext].concat(),
+        }
+    }
+
+    /// Returns the nonce part
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)] // inner is guaranteed to be at least NONCE_LEN long
+    pub fn nonce(&self) -> &[u8; Self::NONCE_LEN] {
+        self.inner[..Self::NONCE_LEN].try_into().unwrap()
+    }
+
+    /// Returns the ciphertext part
+    #[must_use]
+    pub fn ciphertext(&self) -> &[u8] {
+        &self.inner[Self::NONCE_LEN..]
+    }
+
+    /// Returns the concatenation of the nonce and the ciphertext
+    #[must_use]
+    pub fn concatenated_data(&self) -> &[u8] {
+        self.inner.as_slice()
+    }
+}
+
+impl TryFrom<Vec<u8>> for EncryptedData {
+    type Error = Vec<u8>;
+
+    /// Constructs an `EncryptedData` object from the concatenation of nonce and ciphertext. Fails
+    /// if the input is not long enough.
+    fn try_from(vec: Vec<u8>) -> std::result::Result<Self, Vec<u8>> {
+        if vec.len() < Self::NONCE_LEN {
+            Err(vec)
+        } else {
+            Ok(Self { inner: vec })
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for EncryptedData {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        ByteBuf::deserialize(deserializer)?
+            .into_vec()
+            .try_into()
+            .map_err(|v: Vec<_>| {
+                D::Error::custom(format!(
+                    "Expected at least {} bytes for nonce, got {}",
+                    Self::NONCE_LEN,
+                    v.len()
+                ))
+            })
+    }
 }
 
 #[allow(clippy::module_name_repetitions)]
