@@ -51,7 +51,7 @@ pub enum Error {
     #[error("authorization error: {0}")]
     Unauthorized(ErrorResponse),
     #[error("data conflict: {0}")]
-    Conflict(String),
+    Conflict(ErrorResponse),
     #[error("permission denied: {0}")]
     PermissionDenied(ErrorResponse),
 

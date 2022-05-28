@@ -92,9 +92,14 @@ impl Response {
             },
         };
 
-        Err(crate::error::Error::Http {
-            status: self.status,
-            response,
+        Err(match self.status {
+            401 => crate::error::Error::Unauthorized(response),
+            403 => crate::error::Error::PermissionDenied(response),
+            409 => crate::error::Error::Conflict(response),
+            _ => crate::error::Error::Http {
+                status: self.status,
+                response,
+            },
         })
     }
 }
