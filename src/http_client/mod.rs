@@ -121,7 +121,7 @@ impl Client {
     }
 
     pub(crate) fn set_token(&mut self, token: Option<&str>) {
-        self.auth_token = token.map(str::to_string)
+        self.auth_token = token.map(str::to_string);
     }
 
     pub(crate) fn token(&self) -> Option<&str> {
