@@ -14,6 +14,7 @@
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::items_after_statements)]
 #![warn(clippy::redundant_else)]
+#![warn(clippy::explicit_iter_loop)]
 
 mod chunker;
 mod crypto;
