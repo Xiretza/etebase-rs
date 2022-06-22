@@ -841,7 +841,7 @@ fn item_fetch_updates() -> Result<()> {
 
     // Fetch multi
     {
-        let items2 = it_mgr.fetch_multi(items.iter().map(|x| x.uid()), None)?;
+        let items2 = it_mgr.fetch_multi(items.iter().map(etebase::Item::uid), None)?;
         assert_eq!(items2.data().len(), 5);
 
         let items2 = it_mgr.fetch_multi(

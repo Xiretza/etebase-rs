@@ -548,7 +548,10 @@ impl CollectionManagerOnline {
         let res = res.bytes();
 
         let serialized: CollectionListResponse<EncryptedCollection> = rmp_serde::from_slice(res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized
+            .data
+            .iter()
+            .for_each(EncryptedCollection::mark_saved);
 
         Ok(serialized)
     }
@@ -618,7 +621,7 @@ impl ItemManagerOnline {
         let res = res.bytes();
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_slice(res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized.data.iter().for_each(EncryptedItem::mark_saved);
 
         Ok(serialized)
     }
@@ -674,7 +677,7 @@ impl ItemManagerOnline {
         let res = res.bytes();
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_slice(res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized.data.iter().for_each(EncryptedItem::mark_saved);
 
         Ok(serialized)
     }
@@ -698,7 +701,7 @@ impl ItemManagerOnline {
         let res = res.bytes();
 
         let serialized: ItemListResponse<EncryptedItem> = rmp_serde::from_slice(res)?;
-        serialized.data.iter().for_each(|x| x.mark_saved());
+        serialized.data.iter().for_each(EncryptedItem::mark_saved);
 
         Ok(serialized)
     }
