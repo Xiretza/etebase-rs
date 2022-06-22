@@ -64,7 +64,7 @@ pub(crate) struct CryptoManager {
 }
 
 impl CryptoManager {
-    pub fn new(key: &[u8; 32], context: &[u8; 8], version: u8) -> Result<Self> {
+    pub fn new(key: &[u8; 32], context: [u8; 8], version: u8) -> Result<Self> {
         let key = kdf::Key(*key);
         let mut cipher_key = [0; 32];
         let mut mac_key = [0; 32];
@@ -73,23 +73,23 @@ impl CryptoManager {
         let mut deterministic_encryption_key = [0; 32];
 
         to_enc_error!(
-            kdf::derive_from_key(&mut cipher_key, 1, *context, &key),
+            kdf::derive_from_key(&mut cipher_key, 1, context, &key),
             "Failed deriving key"
         )?;
         to_enc_error!(
-            kdf::derive_from_key(&mut mac_key, 2, *context, &key),
+            kdf::derive_from_key(&mut mac_key, 2, context, &key),
             "Failed deriving key"
         )?;
         to_enc_error!(
-            kdf::derive_from_key(&mut asym_key_seed, 3, *context, &key),
+            kdf::derive_from_key(&mut asym_key_seed, 3, context, &key),
             "Failed deriving key"
         )?;
         to_enc_error!(
-            kdf::derive_from_key(&mut sub_derivation_key, 4, *context, &key),
+            kdf::derive_from_key(&mut sub_derivation_key, 4, context, &key),
             "Failed deriving key"
         )?;
         to_enc_error!(
-            kdf::derive_from_key(&mut deterministic_encryption_key, 5, *context, &key),
+            kdf::derive_from_key(&mut deterministic_encryption_key, 5, context, &key),
             "Failed deriving key"
         )?;
 
@@ -451,7 +451,7 @@ mod tests {
         let context = b"Col     ";
         let crypto_manager = super::CryptoManager::new(
             &key[0..32].try_into().unwrap(),
-            context,
+            *context,
             crate::CURRENT_VERSION,
         )
         .unwrap();
@@ -565,7 +565,7 @@ mod tests {
         let context = b"Col     ";
         let crypto_manager = super::CryptoManager::new(
             &key[0..32].try_into().unwrap(),
-            context,
+            *context,
             crate::CURRENT_VERSION,
         )
         .unwrap();

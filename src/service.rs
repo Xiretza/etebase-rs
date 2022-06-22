@@ -37,7 +37,7 @@ impl MainCryptoManager {
         let context = b"Main    ";
 
         Ok(MainCryptoManager(CryptoManager::new(
-            key, context, version,
+            key, *context, version,
         )?))
     }
 
@@ -61,7 +61,7 @@ impl StorageCryptoManager {
     pub fn new(key: &[u8; 32], version: u8) -> Result<Self> {
         let context = b"Stor    ";
 
-        Ok(Self(CryptoManager::new(key, context, version)?))
+        Ok(Self(CryptoManager::new(key, *context, version)?))
     }
 }
 
