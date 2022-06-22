@@ -42,7 +42,7 @@ impl AccountCryptoManager {
     pub fn new(key: &[u8; 32], version: u8) -> Result<Self> {
         let context = b"Acct    ";
 
-        Ok(Self(CryptoManager::new(key, context, version)?))
+        Ok(Self(CryptoManager::new(key, *context, version)?))
     }
 
     pub fn collection_type_to_uid(&self, collection_type: &str) -> Result<Vec<u8>> {
@@ -67,7 +67,7 @@ impl CollectionCryptoManager {
     pub fn new(key: &[u8; 32], version: u8) -> Result<Self> {
         let context = b"Col     ";
 
-        Ok(Self(CryptoManager::new(key, context, version)?))
+        Ok(Self(CryptoManager::new(key, *context, version)?))
     }
 }
 
@@ -77,7 +77,7 @@ impl ItemCryptoManager {
     pub fn new(key: &[u8; 32], version: u8) -> Result<Self> {
         let context = b"ColItem ";
 
-        Ok(Self(CryptoManager::new(key, context, version)?))
+        Ok(Self(CryptoManager::new(key, *context, version)?))
     }
 }
 

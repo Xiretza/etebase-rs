@@ -17,6 +17,7 @@
 #![warn(clippy::explicit_iter_loop)]
 #![warn(clippy::implicit_clone)]
 #![warn(clippy::single_match_else)]
+#![warn(clippy::trivially_copy_pass_by_ref)]
 
 mod chunker;
 mod crypto;
