@@ -556,6 +556,8 @@ mod tests {
 
     #[test]
     fn deterministic_encrypt() -> Result<()> {
+        const BLOCK_SIZE: usize = 32;
+
         crate::init().unwrap();
 
         let key = from_base64(KEY)?;
@@ -581,8 +583,7 @@ mod tests {
             .unwrap();
         assert_eq!(cipher, cipher2);
 
-        const BLOCK_SIZE: usize = 32;
-        const PRECALC: [&str; BLOCK_SIZE * 2] = [
+        let precalc: [&str; BLOCK_SIZE * 2] = [
             "Jp5B3loU3qoohgvlOuiYcbEI1JUhHzwfKsqRRvR_KZFQWvJFn07eHg",
             "yeX7EzjL43RCN89Ch5RBjWkmIj4GwFNgKJhKYEmbn0Crgey8ScixVzk",
             "wq1YkcgH4XEkjRPb8A93Si6hVUdzekkx3Zi_RghmbPrnvdKHFAEp1oNk",
@@ -648,11 +649,11 @@ mod tests {
             "idxFzEtY_FQ-dcY2MJ7WuIt_UmafJApFW1vPWAP6LnEIm2TahVqDGs93wgQs4kewWeBsVhjmtLCMH7IcNyavDa0yc9bzd5EhwHZwmVuc7TVo6TmsN3MiMg57Spq78Ur-2sCrwpwX",
             "wDkNMUPUFESxc0Kz0jqUrm6BnPu9OYOJn8VSMc_YjamfRkJi5CSHWZmv-Ps__dg5dwOR1gzIg56z4SUfyBSR9nVpF34DpgoFEs3E69B8GdnjANpTY6swRA2hGnue2jBzRTQrWjwYbA",
         ];
-        const INPUT: &[u8] = &[60; BLOCK_SIZE * 2];
+        let input: &[u8] = &[60; BLOCK_SIZE * 2];
 
-        for (i, expected) in PRECALC.iter().enumerate() {
+        for (i, expected) in precalc.iter().enumerate() {
             let cipher = crypto_manager
-                .deterministic_encrypt(&INPUT[..i], None)
+                .deterministic_encrypt(&input[..i], None)
                 .unwrap();
             assert_eq!(from_base64(expected).unwrap(), cipher);
         }

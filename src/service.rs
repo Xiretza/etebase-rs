@@ -363,35 +363,36 @@ impl Account {
 
         let encrypted_content = main_crypto_manager.0.encrypt(&content, None)?;
 
-        #[derive(Serialize)]
-        #[serde(rename_all = "camelCase")]
-        pub struct Body<'a> {
-            pub username: &'a str,
-            #[serde(with = "serde_bytes")]
-            pub challenge: &'a [u8],
-            pub host: &'a str,
-            pub action: &'a str,
+        let response = {
+            #[derive(Serialize)]
+            #[serde(rename_all = "camelCase")]
+            pub struct Body<'a> {
+                pub username: &'a str,
+                #[serde(with = "serde_bytes")]
+                pub challenge: &'a [u8],
+                pub host: &'a str,
+                pub action: &'a str,
 
-            #[serde(with = "serde_bytes")]
-            pub login_pubkey: &'a [u8],
-            #[serde(with = "serde_bytes")]
-            pub encrypted_content: &'a [u8],
-        }
+                #[serde(with = "serde_bytes")]
+                pub login_pubkey: &'a [u8],
+                #[serde(with = "serde_bytes")]
+                pub encrypted_content: &'a [u8],
+            }
 
-        let response_struct = Body {
-            username,
-            challenge: &login_challenge.challenge,
-            host: self
-                .client
-                .server_url()
-                .host_str()
-                .unwrap_or_else(|| self.client.server_url().as_str()),
-            action: "changePassword",
+            rmp_serde::to_vec_named(&Body {
+                username,
+                challenge: &login_challenge.challenge,
+                host: self
+                    .client
+                    .server_url()
+                    .host_str()
+                    .unwrap_or_else(|| self.client.server_url().as_str()),
+                action: "changePassword",
 
-            login_pubkey: login_crypto_manager.pubkey(),
-            encrypted_content: &encrypted_content,
+                login_pubkey: login_crypto_manager.pubkey(),
+                encrypted_content: &encrypted_content,
+            })?
         };
-        let response = rmp_serde::to_vec_named(&response_struct)?;
 
         let signature = old_login_crypto_manager.sign_detached(&response)?;
 

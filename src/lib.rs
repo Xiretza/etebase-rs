@@ -12,6 +12,7 @@
 #![warn(clippy::if_not_else)]
 #![warn(clippy::redundant_closure_for_method_calls)]
 #![warn(clippy::semicolon_if_nothing_returned)]
+#![warn(clippy::items_after_statements)]
 
 mod chunker;
 mod crypto;
