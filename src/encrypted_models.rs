@@ -614,7 +614,7 @@ impl EncryptedRevision {
         // We hash the chunks separately so that the server can (in the future) return just the hash instead of the full
         // chunk list if requested - useful for asking for collection updates
         let mut chunks_hash = CryptoMac::new(None)?;
-        for chunk in self.chunks.iter() {
+        for chunk in &self.chunks {
             chunks_hash.update(&from_base64(&chunk.0)?)?;
         }
 
