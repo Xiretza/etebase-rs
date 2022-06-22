@@ -85,14 +85,14 @@ impl Response {
 
     /// Returns [`Ok`] for valid responses and an [`Error`] object on error
     pub fn error_for_status(&self) -> Result<()> {
-        if self.status >= 200 && self.status < 300 {
-            return Ok(());
-        }
-
         #[derive(Deserialize)]
         struct ErrorResponse<'a> {
             pub code: Option<&'a str>,
             pub detail: Option<&'a str>,
+        }
+
+        if self.status >= 200 && self.status < 300 {
+            return Ok(());
         }
 
         let content: ErrorResponse = rmp_serde::from_slice(self.bytes()).unwrap_or(ErrorResponse {
