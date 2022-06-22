@@ -61,8 +61,7 @@ impl Client {
         let req = self.prep_client(self.req_client.get(url), auth_token);
         let resp = req.send()?;
         let status = resp.status().as_u16();
-        let ret = Response::new(resp.bytes()?.to_vec(), status);
-        Ok(ret)
+        Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn post_inner(&self, url: &str, auth_token: Option<&str>, body: Vec<u8>) -> Result<Response> {
@@ -71,8 +70,7 @@ impl Client {
             .body(body);
         let resp = req.send()?;
         let status = resp.status().as_u16();
-        let ret = Response::new(resp.bytes()?.to_vec(), status);
-        Ok(ret)
+        Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn put_inner(&self, url: &str, auth_token: Option<&str>, body: Vec<u8>) -> Result<Response> {
@@ -81,8 +79,7 @@ impl Client {
             .body(body);
         let resp = req.send()?;
         let status = resp.status().as_u16();
-        let ret = Response::new(resp.bytes()?.to_vec(), status);
-        Ok(ret)
+        Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn patch_inner(&self, url: &str, auth_token: Option<&str>, body: Vec<u8>) -> Result<Response> {
@@ -91,16 +88,14 @@ impl Client {
             .body(body);
         let resp = req.send()?;
         let status = resp.status().as_u16();
-        let ret = Response::new(resp.bytes()?.to_vec(), status);
-        Ok(ret)
+        Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 
     fn delete_inner(&self, url: &str, auth_token: Option<&str>) -> Result<Response> {
         let req = self.prep_client(self.req_client.delete(url), auth_token);
         let resp = req.send()?;
         let status = resp.status().as_u16();
-        let ret = Response::new(resp.bytes()?.to_vec(), status);
-        Ok(ret)
+        Ok(Response::new(resp.bytes()?.to_vec(), status))
     }
 }
 
