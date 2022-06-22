@@ -717,7 +717,7 @@ impl ItemManagerOnline {
                 etag: x.last_etag(),
             })
             .collect();
-        let deps = if !deps.is_empty() { Some(deps) } else { None };
+        let deps = if deps.is_empty() { None } else { Some(deps) };
         let body_struct = ItemBatchBody {
             items: &items,
             deps,
@@ -753,7 +753,7 @@ impl ItemManagerOnline {
                 etag: x.last_etag(),
             })
             .collect();
-        let deps = if !deps.is_empty() { Some(deps) } else { None };
+        let deps = if deps.is_empty() { None } else { Some(deps) };
         let body_struct = ItemBatchBody {
             items: &items,
             deps,
