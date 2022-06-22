@@ -792,7 +792,7 @@ impl ItemManagerOnline {
             options,
         );
         // FIXME: We are copying the vec here, we shouldn't! Fix the client.
-        let res = self.client.put(url.as_str(), chunk_content.to_vec())?;
+        let res = self.client.put(url.as_str(), chunk_content.clone())?;
         res.error_for_status()?;
 
         Ok(())

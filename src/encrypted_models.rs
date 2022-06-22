@@ -869,9 +869,9 @@ impl EncryptedItem {
 
     pub(crate) fn clone_with_revision(&self, revision: EncryptedRevision) -> Self {
         let ret = Self {
-            uid: self.uid.to_string(),
+            uid: self.uid.clone(),
             version: self.version,
-            encryption_key: self.encryption_key.as_ref().map(|x| x.to_vec()),
+            encryption_key: self.encryption_key.as_ref().cloned(),
 
             content: revision,
 
