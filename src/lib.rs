@@ -20,6 +20,7 @@
 #![warn(clippy::unnecessary_wraps)]
 #![warn(clippy::unreadable_literal)]
 #![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
 
 mod chunker;
 mod crypto;
