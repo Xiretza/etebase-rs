@@ -18,6 +18,7 @@
 #![warn(clippy::single_match_else)]
 #![warn(clippy::trivially_copy_pass_by_ref)]
 #![warn(clippy::unnecessary_wraps)]
+#![warn(clippy::unreadable_literal)]
 
 mod chunker;
 mod crypto;

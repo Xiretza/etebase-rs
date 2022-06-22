@@ -322,7 +322,7 @@ mod tests {
             }
         }
 
-        assert_eq!(super::get_padding(2343242), 2359296);
+        assert_eq!(super::get_padding(2_343_242), 2_359_296);
     }
 
     #[test]
