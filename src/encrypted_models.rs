@@ -353,6 +353,7 @@ impl EncryptedCollection {
         let cached: CachedContent = rmp_serde::from_slice(cached)?;
         let ret: std::result::Result<Self, _> = rmp_serde::from_slice(&cached.data);
         // FIXME: remove this whole match once "collection-type-migration" is done
+        #[allow(clippy::single_match_else)] // cleaner this way
         Ok(match ret {
             Ok(ret) => ret,
             Err(_) => {
