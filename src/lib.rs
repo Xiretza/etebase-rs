@@ -10,6 +10,7 @@
 #![warn(clippy::unused_self)]
 #![warn(clippy::module_name_repetitions)]
 #![warn(clippy::if_not_else)]
+#![warn(clippy::redundant_closure_for_method_calls)]
 
 mod chunker;
 mod crypto;
